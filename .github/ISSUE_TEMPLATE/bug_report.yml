@@ -1,0 +1,16 @@
+name: "버그 제보"
+description: 버그 제보 작성 기본 양식입니다.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        작성 예시 : "[BUG] 로그인 버그"
+  - type: textarea
+    id: bug-description
+    attributes:
+      label: 버그 설명
+      description: 버그가 언제/어떤 상황에서 발생했는지 명확하게 적어주세요.
+      placeholder: 설명을 적어주세요.
+    validations:
+      required: true
