@@ -2,7 +2,6 @@ from rest_framework import serializers
 from .models import GameRoom
 
 class GameRoomSerializer(serializers.ModelSerializer):
-    # id = serializers.IntegerField(source='id', read_only=True)
     password = serializers.CharField(
         write_only=True,
         required=False,
