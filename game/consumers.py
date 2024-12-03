@@ -8,18 +8,25 @@ from .redis_utils import (
     should_start_game,
     get_participants
 )
+from config.services import get_user
 
 
 class GameRoomConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         self.room_id = self.scope['url_route']['kwargs']['room_id']
         self.room_group_name = f'gameroom_{self.room_id}'
-        self.user = self.scope['user']
-        self.user_id = self.user['id']
-        self.user_name = self.user['nickname']
+        self.user_id = self.scope['user_id']
+        self.user_name = None
+        token = self.scope['token']
+        user = await get_user(self.user_id, token)
+        if not user:
+            await self.close(code=4000) # 4000: 해당 user가 없음
+            return
+        self.user = user
+        self.user_name = self.user.get('nickname')
         
         if await is_user_in_room(self.user_name):
-            await self.close(code=4000) # 4000(custom): 이미 소속된 방이 있음
+            await self.close(code=4001) # 4001: 이미 소속된 방이 있음
             return
         
         await self.accept()
@@ -42,11 +49,11 @@ class GameRoomConsumer(AsyncWebsocketConsumer):
         })
         
     async def disconnect(self, close_code):
-        await remove_user_from_room(self.room_id, self.user_name)
-        
-        await self.broadcast_message('leave', {
-            'user_name': self.user_name
-        })
+        if self.room_id and self.user_name:
+            await remove_user_from_room(self.room_id, self.user_name)
+            await self.broadcast_message('leave', {
+                'user_name': self.user_name
+            })
         
         await self.channel_layer.group_discard(
             self.room_group_name,
@@ -54,7 +61,11 @@ class GameRoomConsumer(AsyncWebsocketConsumer):
         )
         
     async def receive(self, text_data):
-        data = json.loads(text_data)
+        try:
+            data = json.loads(text_data)
+        except json.JSONDecodeError:
+            await self.send(json.dumps({'error': 'json decode error'}))
+            return
         message_type = data.get('type')
         
         if message_type == 'ready':
