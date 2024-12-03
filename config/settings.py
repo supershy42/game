@@ -26,7 +26,9 @@ INSTALLED_APPS = [
     'game',
 ]
 
+# 위에서부터 맞는 미들웨어 찾으므로 순서 중요
 MIDDLEWARE = [
+    'config.middlewares.CustomHttpMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
