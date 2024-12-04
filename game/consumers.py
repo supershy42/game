@@ -9,6 +9,8 @@ from .redis_utils import (
     get_participants
 )
 from config.services import get_user
+from channels.db import database_sync_to_async
+from .models import Reception
 
 
 class ReceptionConsumer(AsyncWebsocketConsumer):
@@ -17,7 +19,13 @@ class ReceptionConsumer(AsyncWebsocketConsumer):
         self.reception_group_name = f'reception_{self.reception_id}'
         self.user_id = self.scope['user_id']
         self.is_added = False
-        token = self.scope['token']
+        # token = self.scope['token']
+        
+        try:
+            self.reception = await database_sync_to_async(Reception.objects.get)(id=self.reception_id)
+        except Reception.DoesNotExist:
+            await self.close(code=4002)  # 4002: 해당 Reception이 없음 
+            return
         
         user = await get_user(self.user_id)
         if not user:
@@ -91,10 +99,10 @@ class ReceptionConsumer(AsyncWebsocketConsumer):
             await self.start_game()
             
     async def start_game(self):
-        # 로직 추가 예정
         await self.broadcast_message('start', {
             'message': 'Game start!'
         })
+        await self.close(code=5000) # 5000: 게임 시작
         
     async def broadcast_message(self, message_type, content):
         await self.channel_layer.group_send(
