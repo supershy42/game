@@ -16,9 +16,10 @@ class GameRoomConsumer(AsyncWebsocketConsumer):
         self.room_id = self.scope['url_route']['kwargs']['room_id']
         self.room_group_name = f'gameroom_{self.room_id}'
         self.user_id = self.scope['user_id']
-        self.user_name = None
+        self.is_added = False
         token = self.scope['token']
-        user = await get_user(self.user_id, token)
+        
+        user = await get_user(self.user_id)
         if not user:
             await self.close(code=4000) # 4000: 해당 user가 없음
             return
@@ -37,6 +38,7 @@ class GameRoomConsumer(AsyncWebsocketConsumer):
         )
         
         await add_user_to_room(self.room_id, self.user_name)
+        self.is_added = True
         
         participants = await get_participants(self.room_id)
         await self.send(text_data=json.dumps({
@@ -49,7 +51,7 @@ class GameRoomConsumer(AsyncWebsocketConsumer):
         })
         
     async def disconnect(self, close_code):
-        if self.room_id and self.user_name:
+        if self.is_added:
             await remove_user_from_room(self.room_id, self.user_name)
             await self.broadcast_message('leave', {
                 'user_name': self.user_name
