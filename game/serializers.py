@@ -1,7 +1,7 @@
 from rest_framework import serializers
-from .models import GameRoom
+from .models import Reception
 
-class GameRoomSerializer(serializers.ModelSerializer):
+class ReceptionSerializer(serializers.ModelSerializer):
     password = serializers.CharField(
         write_only=True,
         required=False,
@@ -11,7 +11,7 @@ class GameRoomSerializer(serializers.ModelSerializer):
     )
     
     class Meta:
-        model = GameRoom
+        model = Reception
         fields = ['id', 'name', 'password']
         extra_kwargs = {
             'name': {'required': True},
@@ -19,7 +19,7 @@ class GameRoomSerializer(serializers.ModelSerializer):
     
     def create(self, validated_data):
         password = validated_data.pop('password', None)
-        room = GameRoom(**validated_data)
-        room.set_password(password)
-        room.save()
-        return room
+        reception = Reception(**validated_data)
+        reception.set_password(password)
+        reception.save()
+        return reception

@@ -1,6 +1,6 @@
 from django.urls import path
-from .views import CreateGameRoomView
+from .views import CreateReceptionView
 
 urlpatterns = [
-    path('create-room/', CreateGameRoomView.as_view(), name='create-room'),
+    path('create-reception/', CreateReceptionView.as_view(), name='create-reception'),
 ]

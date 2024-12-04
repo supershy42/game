@@ -1,9 +1,9 @@
 from channels.generic.websocket import AsyncWebsocketConsumer
 import json
 from .redis_utils import (
-    is_user_in_room,
-    add_user_to_room,
-    remove_user_from_room,
+    is_user_in_reception,
+    add_user_to_reception,
+    remove_user_from_reception,
     update_user_state,
     should_start_game,
     get_participants
@@ -11,10 +11,10 @@ from .redis_utils import (
 from config.services import get_user
 
 
-class GameRoomConsumer(AsyncWebsocketConsumer):
+class ReceptionConsumer(AsyncWebsocketConsumer):
     async def connect(self):
-        self.room_id = self.scope['url_route']['kwargs']['room_id']
-        self.room_group_name = f'gameroom_{self.room_id}'
+        self.reception_id = self.scope['url_route']['kwargs']['reception_id']
+        self.reception_group_name = f'reception_{self.reception_id}'
         self.user_id = self.scope['user_id']
         self.is_added = False
         token = self.scope['token']
@@ -26,21 +26,21 @@ class GameRoomConsumer(AsyncWebsocketConsumer):
         self.user = user
         self.user_name = self.user.get('nickname')
         
-        if await is_user_in_room(self.user_name):
+        if await is_user_in_reception(self.user_name):
             await self.close(code=4001) # 4001: 이미 소속된 방이 있음
             return
         
         await self.accept()
         
         await self.channel_layer.group_add(
-            self.room_group_name,
+            self.reception_group_name,
             self.channel_name
         )
         
-        await add_user_to_room(self.room_id, self.user_name)
+        await add_user_to_reception(self.reception_id, self.user_name)
         self.is_added = True
         
-        participants = await get_participants(self.room_id)
+        participants = await get_participants(self.reception_id)
         await self.send(text_data=json.dumps({
             'type': 'participants',
             'content': participants
@@ -52,13 +52,13 @@ class GameRoomConsumer(AsyncWebsocketConsumer):
         
     async def disconnect(self, close_code):
         if self.is_added:
-            await remove_user_from_room(self.room_id, self.user_name)
+            await remove_user_from_reception(self.reception_id, self.user_name)
             await self.broadcast_message('leave', {
                 'user_name': self.user_name
             })
         
         await self.channel_layer.group_discard(
-            self.room_group_name,
+            self.reception_group_name,
             self.channel_name
         )
         
@@ -80,14 +80,14 @@ class GameRoomConsumer(AsyncWebsocketConsumer):
         
         is_ready = data['is_ready']
         
-        await update_user_state(self.room_id, self.user_name, is_ready)
+        await update_user_state(self.reception_id, self.user_name, is_ready)
         
         await self.broadcast_message('ready', {
             'user_name': self.user_name,
             'is_ready': is_ready
         })
         
-        if await should_start_game(self.room_id):
+        if await should_start_game(self.reception_id):
             await self.start_game()
             
     async def start_game(self):
@@ -98,7 +98,7 @@ class GameRoomConsumer(AsyncWebsocketConsumer):
         
     async def broadcast_message(self, message_type, content):
         await self.channel_layer.group_send(
-            self.room_group_name,
+            self.reception_group_name,
             {
                 'type': 'send_to_client',
                 'message_type': message_type,
