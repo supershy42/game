@@ -31,6 +31,13 @@ async def update_user_state(reception_id, user_name, is_ready):
     participants_key = get_participants_key(reception_id)
     await redis_client.hset(participants_key, user_name, int(is_ready))
     
+async def should_remove_reception(reception_id):
+    participants = await get_participants(reception_id)
+    
+    if len(participants) < 1:
+        return True
+    return False
+    
 async def should_start_game(reception_id):
     participants = await get_participants(reception_id)
 

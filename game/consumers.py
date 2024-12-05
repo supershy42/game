@@ -5,6 +5,7 @@ from .redis_utils import (
     add_user_to_reception,
     remove_user_from_reception,
     update_user_state,
+    should_remove_reception,
     should_start_game,
     get_participants
 )
@@ -61,9 +62,12 @@ class ReceptionConsumer(AsyncWebsocketConsumer):
     async def disconnect(self, close_code):
         if self.is_added:
             await remove_user_from_reception(self.reception_id, self.user_name)
-            await self.broadcast_message('leave', {
-                'user_name': self.user_name
-            })
+            if await should_remove_reception(self.reception_id):
+                await Reception.objects.filter(id=self.reception_id).adelete()
+            else:
+                await self.broadcast_message('leave', {
+                    'user_name': self.user_name
+                })
         
         await self.channel_layer.group_discard(
             self.reception_group_name,
