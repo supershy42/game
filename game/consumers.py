@@ -9,8 +9,8 @@ from .redis_utils import (
     get_participants
 )
 from config.services import get_user
-from channels.db import database_sync_to_async
 from .models import Reception
+import asyncio
 
 
 class ReceptionConsumer(AsyncWebsocketConsumer):
@@ -22,7 +22,7 @@ class ReceptionConsumer(AsyncWebsocketConsumer):
         # token = self.scope['token']
         
         try:
-            self.reception = await database_sync_to_async(Reception.objects.get)(id=self.reception_id)
+            self.reception = await Reception.objects.aget(id=self.reception_id)
         except Reception.DoesNotExist:
             await self.close(code=4002)  # 4002: 해당 Reception이 없음 
             return
@@ -102,6 +102,7 @@ class ReceptionConsumer(AsyncWebsocketConsumer):
         await self.broadcast_message('start', {
             'message': 'Game start!'
         })
+        await asyncio.sleep(1)
         await self.close(code=5000) # 5000: 게임 시작
         
     async def broadcast_message(self, message_type, content):
