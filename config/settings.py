@@ -24,10 +24,12 @@ INSTALLED_APPS = [
     'rest_framework',
     'channels',
     'game',
+    'corsheaders'
 ]
 
 # 위에서부터 맞는 미들웨어 찾으므로 순서 중요
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'config.middlewares.CustomHttpMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -122,3 +124,6 @@ CHANNEL_LAYERS = {
         },
     },
 }
+
+# CORS
+CORS_ALLOW_ALL_ORIGINS = True
