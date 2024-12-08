@@ -30,7 +30,7 @@ INSTALLED_APPS = [
 # 위에서부터 맞는 미들웨어 찾으므로 순서 중요
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
-    'config.middlewares.CustomHttpMiddleware',
+    'config.middleware.CustomHttpMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
