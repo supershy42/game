@@ -6,8 +6,8 @@ class GameRoomSerializer(serializers.ModelSerializer):
         write_only=True,
         required=False,
         allow_null=True,
-        allow_blank=True,
-        style={'input_type': 'password'}
+        style={'input_type': 'password'},
+        max_length=20,
     )
     
     class Meta:
