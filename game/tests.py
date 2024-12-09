@@ -96,7 +96,7 @@ class CreateReceptionTestCase(APITestCase):
         self.assertEqual(response.json()['error'], 'Authentication token missing.')
 
 
-class TestReceptionsView(APITestCase):
+class TestReceptionListView(APITestCase):
     def setUp(self):
         # 테스트 데이터 생성
         for i in range(15):

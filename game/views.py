@@ -20,6 +20,6 @@ class CreateReceptionView(APIView):
             status=status.HTTP_400_BAD_REQUEST
         )
         
-class ReceptionsView(ListAPIView):
+class ReceptionListView(ListAPIView):
     queryset = Reception.objects.order_by('id')
     serializer_class = ReceptionSerializer
