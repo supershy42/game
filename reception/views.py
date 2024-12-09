@@ -23,3 +23,17 @@ class CreateReceptionView(APIView):
 class ReceptionListView(ListAPIView):
     queryset = Reception.objects.order_by('id')
     serializer_class = ReceptionSerializer
+    
+class ReceptionJoinView(APIView):
+    def post(self, request, room_id):
+        user_id = request.user_id
+        user_password = request.data.get('password', None)
+        
+        reception = Reception.objects.get(id=room_id)
+        
+        invited = False # temp
+        
+        if invited or reception.check_password(user_password):
+            ws_token = "xxx.yyy.zzz" # temp
+            return Response({"status": "ok", "ws_token": ws_token}, status=status.HTTP_200_OK)
+        return Response({"detail": "Invalid password"}, status=status.HTTP_403_FORBIDDEN) 

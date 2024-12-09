@@ -1,9 +1,10 @@
 from enum import Enum
 
 class CloseCode(Enum):
-    NO_RECEPTION = 4000
-    NO_USER = 4001
-    ALREADY_IN_ROOM = 4002
+    INVALID_TOKEN = 4000
+    NO_RECEPTION = 4001
+    NO_USER = 4002
+    ALREADY_IN_ROOM = 4003
     GAME_STARTED = 5000
     
     def __int__(self):
