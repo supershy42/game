@@ -12,6 +12,7 @@ from .redis_utils import (
 from config.services import get_user
 from .models import Reception
 import asyncio
+from config.close_codes import CloseCode
 
 
 class ReceptionConsumer(AsyncWebsocketConsumer):
@@ -25,18 +26,18 @@ class ReceptionConsumer(AsyncWebsocketConsumer):
         try:
             self.reception = await Reception.objects.aget(id=self.reception_id)
         except Reception.DoesNotExist:
-            await self.close(code=4002)  # 4002: 해당 Reception이 없음 
+            await self.close(code=CloseCode.NO_RECEPTION)
             return
         
         user = await get_user(self.user_id)
         if not user:
-            await self.close(code=4000) # 4000: 해당 user가 없음
+            await self.close(code=CloseCode.NO_USER)
             return
         self.user = user
         self.user_name = self.user.get('nickname')
         
         if await is_user_in_reception(self.user_name):
-            await self.close(code=4001) # 4001: 이미 소속된 방이 있음
+            await self.close(code=CloseCode.ALREADY_IN_ROOM)
             return
         
         await self.accept()
@@ -107,7 +108,7 @@ class ReceptionConsumer(AsyncWebsocketConsumer):
             'message': 'Game start!'
         })
         await asyncio.sleep(1)
-        await self.close(code=5000) # 5000: 게임 시작
+        await self.close(code=CloseCode.GAME_STARTED)
         
     async def broadcast_message(self, message_type, content):
         await self.channel_layer.group_send(
