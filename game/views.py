@@ -1,14 +1,14 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from .serializers import GameRoomSerializer
+from .serializers import ReceptionSerializer
 
-class CreateGameRoomView(APIView):
+class CreateReceptionView(APIView):
     def post(self, request):
-        serializer = GameRoomSerializer(data=request.data)
+        serializer = ReceptionSerializer(data=request.data)
         if serializer.is_valid():
-            room = serializer.save()
-            response_serializer = GameRoomSerializer(room)
+            reception = serializer.save()
+            response_serializer = ReceptionSerializer(reception)
             return Response(
                 response_serializer.data,
                 status=status.HTTP_201_CREATED

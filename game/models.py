@@ -1,7 +1,7 @@
 from django.db import models
 from django.contrib.auth.hashers import make_password, check_password
 
-class GameRoom(models.Model):
+class Reception(models.Model):
     name = models.CharField(max_length=20)
     password = models.CharField(max_length=20, null=True, blank=True)
     max_players = models.PositiveIntegerField(default=2)
@@ -20,4 +20,4 @@ class GameRoom(models.Model):
         return check_password(raw_password, self.password)
     
     def __str__(self):
-        return f"GameRoom: {self.name}"
+        return f"Reception: {self.name}"
