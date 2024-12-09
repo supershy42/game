@@ -127,3 +127,9 @@ CHANNEL_LAYERS = {
 
 # CORS
 CORS_ALLOW_ALL_ORIGINS = True
+
+# PAGENATIOIN
+REST_FRAMEWORK = {
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 10,  # 기본 페이지 크기 설정
+}
