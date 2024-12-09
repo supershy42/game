@@ -2,6 +2,8 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from .serializers import ReceptionSerializer
+from rest_framework.generics import ListAPIView
+from .models import Reception
 
 class CreateReceptionView(APIView):
     def post(self, request):
@@ -17,3 +19,7 @@ class CreateReceptionView(APIView):
             serializer.errors,
             status=status.HTTP_400_BAD_REQUEST
         )
+        
+class ReceptionsView(ListAPIView):
+    queryset = Reception.objects.order_by('id')
+    serializer_class = ReceptionSerializer
