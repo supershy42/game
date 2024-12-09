@@ -4,7 +4,7 @@ import jwt
 from rest_framework.test import APITestCase, APIClient
 from django.urls import reverse
 from rest_framework import status
-from game.models import Reception
+from reception.models import Reception
 
 class CreateReceptionTestCase(APITestCase):
     def setUp(self):
