@@ -14,6 +14,7 @@ from .models import Reception
 import asyncio
 from config.close_codes import CloseCode
 from urllib.parse import parse_qs
+from .jwt_utils import verify_ws_token
 
 
 class ReceptionConsumer(AsyncWebsocketConsumer):
@@ -76,18 +77,21 @@ class ReceptionConsumer(AsyncWebsocketConsumer):
             return
             
     async def validate_token(self, token):
-        if token in used_tokens:
+        # if token in used_tokens:
+        #     return False
+        # else:
+        #     used_tokens.add(token)
+        payload = verify_ws_token(token)
+        if not payload:
             return False
-        else:
-            used_tokens.add(token)
-            
-        if self.user_id != token.get('user_id'):
-            return False
-        if self.reception_id != token.get('reception_id'):
-            return False
-        
         if not self.user:
             return False
+        
+        if self.user_id != payload.get('user_id'):
+            return False
+        if self.reception_id != payload.get('reception_id'):
+            return False
+        
         try:
             self.reception = await Reception.objects.aget(id=self.reception_id)
         except Reception.DoesNotExist:
