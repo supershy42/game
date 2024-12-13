@@ -1,9 +1,6 @@
 import jwt
 import datetime
-from decouple import config
-
-WS_SECRET_KEY = config(WS_SECRET_KEY)
-WS_ALGORITHM = config(WS_ALGORITHM)
+from config.settings import WS_SECRET_KEY, WS_ALGORITHM
 
 def create_ws_token(user_id, reception_id, expiration_minutes=30):
     payload = {

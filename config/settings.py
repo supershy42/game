@@ -133,3 +133,9 @@ REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 10,  # 기본 페이지 크기 설정
 }
+
+# INVITE_TOKEN
+from decouple import config
+
+WS_SECRET_KEY = config("WS_SECRET_KEY")
+WS_ALGORITHM = config("WS_ALGORITHM")
