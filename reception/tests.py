@@ -47,9 +47,7 @@ class CreateReceptionTestCase(APITestCase):
         }
         response = self.client.post(self.url, data, format='json')
         
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn('password', response.data)
-        self.assertEqual(response.data['password'][0].code, 'required')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
     def test_create_room_with_name_exceeding_max_length(self):
         data = {
@@ -83,6 +81,17 @@ class CreateReceptionTestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn('password', response.data)
         self.assertEqual(response.data['password'][0].code, 'max_length')
+        
+    def test_create_room_with_password_below_min_length(self):
+        data = {
+            'name': 'Valid Room Name',
+            'password': ''
+        }
+        response = self.client.post(self.url, data, format='json')
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('password', response.data)
+        self.assertEqual(response.data['password'][0].code, 'blank')
         
     def test_create_reception_without_token(self):
         # Remove the credentials
