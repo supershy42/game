@@ -1,12 +1,13 @@
 import jwt
 import datetime
 from config.settings import WS_SECRET_KEY, WS_ALGORITHM
+from django.utils.timezone import now
 
 def create_ws_token(user_id, reception_id, expiration_minutes=30):
     payload = {
         "user_id": user_id,
         "reception_id": reception_id,
-        "exp": datetime.timezone.now() + datetime.timedelta(minutes=expiration_minutes)
+        "exp": now() + datetime.timedelta(minutes=expiration_minutes)
     }
     token = jwt.encode(payload, WS_SECRET_KEY, algorithm=WS_ALGORITHM)
     return token
