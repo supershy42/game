@@ -4,7 +4,8 @@ from .models import Reception
 class ReceptionSerializer(serializers.ModelSerializer):
     password = serializers.CharField(
         write_only=True,
-        allow_blank=True,
+        required=False,
+        allow_blank=False,
         style={'input_type': 'password'},
         max_length=20,
     )
