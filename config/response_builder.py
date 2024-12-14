@@ -8,11 +8,10 @@ def response_ok(message="ok", status=status.HTTP_200_OK):
     return Response(message, status=status)
 
 def response_error(errors):
-    message = extract_message(errors)
-    if not message:
-        message = "unknown error."
+    if not errors:
+        errors = "unknown error."
     return Response(
-        {"message": message},
+        {"message": errors},
         status=extract_status(errors)
     )
     
@@ -33,9 +32,3 @@ def extract_status(errors):
         elif isinstance(value, dict):  # 중첩된 dict 처리
             return extract_status(value)  # 재귀 호출
     return None
-
-def extract_message(errors):
-    parsed_messages = {
-        key: value for key, value in errors.items()
-    }
-    return {k: v for k, v in parsed_messages.items()}
