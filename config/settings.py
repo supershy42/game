@@ -134,8 +134,9 @@ REST_FRAMEWORK = {
     'PAGE_SIZE': 10,  # 기본 페이지 크기 설정
 }
 
-# INVITE_TOKEN
+# ENV
 from decouple import config
 
 WS_SECRET_KEY = config("WS_SECRET_KEY")
 WS_ALGORITHM = config("WS_ALGORITHM")
+USER_SERVICE = config("USER_SERVICE")
