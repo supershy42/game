@@ -1,14 +1,15 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from .serializers import ReceptionSerializer, ReceptionJoinSerializer
+from .serializers import ReceptionSerializer, ReceptionJoinSerializer, ReceptionInvitationSerializer
 from rest_framework.generics import ListAPIView
 from .models import Reception
-from .services import websocket_reception_url, validate_join_reception
+from .services import websocket_reception_url, validate_join_reception, invite
 from .jwt_utils import create_ws_token
 from config.response_builder import response_error, response_ok
 from config.custom_validation_error import CustomValidationError
 from asgiref.sync import async_to_sync
+from config.services import get_user_name
 
 class CreateReceptionView(APIView):
     def post(self, request):
@@ -45,11 +46,15 @@ class ReceptionJoinView(APIView):
         except CustomValidationError as e:
             return response_error(e)
 
-# 테스트 용 임시 invitation view
-from .redis_utils import redis_invite
 class ReceptionInvitationView(APIView):
     def post(self, request):
-        to_user_id = request.data.get('user_id')
-        reception_id = 2
-        async_to_sync(redis_invite)(reception_id, to_user_id)
-        return response_ok("test invite view.")
+        from_user_id = request.user_id
+        serializer = ReceptionInvitationSerializer(data=request.data, context={'from_user_id': from_user_id})
+        serializer.is_valid(raise_exception=True)
+        to_user_id = serializer.validated_data['to_user_id']
+        from_user_name = async_to_sync(get_user_name)(from_user_id, request.token)
+        try:
+            async_to_sync(invite)(from_user_id, to_user_id, from_user_name)
+            return response_ok()
+        except CustomValidationError as e:
+            return response_error(e)

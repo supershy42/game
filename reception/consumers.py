@@ -6,7 +6,9 @@ from .redis_utils import (
     remove_user_from_reception,
     update_user_state,
     should_remove_reception,
-    should_start_game
+    should_start_game,
+    add_to_blacklist,
+    is_blacklisted
 )
 from .services import get_participants_detail
 from config.services import get_user
@@ -45,6 +47,7 @@ class ReceptionConsumer(AsyncWebsocketConsumer):
             self.channel_name
         )
         
+        await add_to_blacklist(token)
         await add_user_to_reception(self.reception_id, self.user_id)
         self.is_added = True
         
@@ -78,10 +81,9 @@ class ReceptionConsumer(AsyncWebsocketConsumer):
             return
             
     async def validate_token(self, token):
-        # if token in used_tokens:
-        #     return False
-        # else:
-        #     used_tokens.add(token)
+        if is_blacklisted(token):
+            return False
+        
         payload = verify_ws_token(token)
         if not payload:
             return False
