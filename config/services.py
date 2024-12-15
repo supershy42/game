@@ -10,3 +10,12 @@ async def get_user(user_id, token):
             if response.status == 200:
                 return await response.json()
             return None
+        
+async def get_user_name(user_id, token):
+    user = await get_user(user_id, token)
+    if not user:
+        return None
+    return user.get('nickname', None)
+        
+def get_invitation_group_name(user_id):
+    return f"invitation_{user_id}"

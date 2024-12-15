@@ -13,6 +13,7 @@ class ErrorType(Enum):
     INVALID_PASSWORD = (status.HTTP_401_UNAUTHORIZED, "Invalid password.")
     
     RECEPTION_FULL = (status.HTTP_403_FORBIDDEN, "The reception is full.")
+    NO_RECEPTION = (status.HTTP_403_FORBIDDEN, "No reception.")
     
     USER_NOT_FOUND = (status.HTTP_404_NOT_FOUND, "User not found.")
     RECEPTION_NOT_FOUND = (status.HTTP_404_NOT_FOUND, "Reception not found.")
