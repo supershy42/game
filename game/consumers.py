@@ -12,6 +12,7 @@ from .redis_utils import (
 from config.services import get_user
 from .models import Reception
 import asyncio
+from config.close_codes import CloseCode
 
 
 class ReceptionConsumer(AsyncWebsocketConsumer):
@@ -25,18 +26,18 @@ class ReceptionConsumer(AsyncWebsocketConsumer):
         try:
             self.reception = await Reception.objects.aget(id=self.reception_id)
         except Reception.DoesNotExist:
-            await self.close(code=4002)  # 4002: 해당 Reception이 없음 
+            await self.close(code=CloseCode.NO_RECEPTION)
             return
         
         user = await get_user(self.user_id)
         if not user:
-            await self.close(code=4000) # 4000: 해당 user가 없음
+            await self.close(code=CloseCode.NO_USER)
             return
         self.user = user
         self.user_name = self.user.get('nickname')
         
         if await is_user_in_reception(self.user_name):
-            await self.close(code=4001) # 4001: 이미 소속된 방이 있음
+            await self.close(code=CloseCode.ALREADY_IN_ROOM)
             return
         
         await self.accept()
@@ -49,15 +50,7 @@ class ReceptionConsumer(AsyncWebsocketConsumer):
         await add_user_to_reception(self.reception_id, self.user_name)
         self.is_added = True
         
-        participants = await get_participants(self.reception_id)
-        await self.send(text_data=json.dumps({
-            'type': 'participants',
-            'content': participants
-        }))
-        
-        await self.broadcast_message('join', {
-            'user_name': self.user_name
-        })
+        await self.broadcast_message('participants', await get_participants(self.reception_id))
         
     async def disconnect(self, close_code):
         if self.is_added:
@@ -65,9 +58,7 @@ class ReceptionConsumer(AsyncWebsocketConsumer):
             if await should_remove_reception(self.reception_id):
                 await Reception.objects.filter(id=self.reception_id).adelete()
             else:
-                await self.broadcast_message('leave', {
-                    'user_name': self.user_name
-                })
+                await self.broadcast_message('participants', await get_participants(self.reception_id))
         
         await self.channel_layer.group_discard(
             self.reception_group_name,
@@ -84,6 +75,9 @@ class ReceptionConsumer(AsyncWebsocketConsumer):
         
         if message_type == 'ready':
             await self.handle_ready(data)
+        else:
+            await self.send(json.dumps({'error': 'unknown message type'}))
+            return
             
     async def handle_ready(self, data):
         if 'is_ready' not in data:
@@ -94,10 +88,7 @@ class ReceptionConsumer(AsyncWebsocketConsumer):
         
         await update_user_state(self.reception_id, self.user_name, is_ready)
         
-        await self.broadcast_message('ready', {
-            'user_name': self.user_name,
-            'is_ready': is_ready
-        })
+        await self.broadcast_message('participants', await get_participants(self.reception_id))
         
         if await should_start_game(self.reception_id):
             await self.start_game()
@@ -106,8 +97,8 @@ class ReceptionConsumer(AsyncWebsocketConsumer):
         await self.broadcast_message('start', {
             'message': 'Game start!'
         })
-        await asyncio.sleep(1)
-        await self.close(code=5000) # 5000: 게임 시작
+        await asyncio.sleep(3)
+        await self.close(code=CloseCode.GAME_STARTED)
         
     async def broadcast_message(self, message_type, content):
         await self.channel_layer.group_send(
@@ -115,17 +106,11 @@ class ReceptionConsumer(AsyncWebsocketConsumer):
             {
                 'type': 'send_to_client',
                 'message_type': message_type,
-                'sender': self.channel_name,
                 'content': content
             }
         )
 
     async def send_to_client(self, event):
-        if event.get('message_type') != 'start':
-            sender = event.get('sender')
-            if sender == self.channel_name:
-                return
-        
         await self.send(text_data=json.dumps({
             'type': event['message_type'],
             'content': event['content']
