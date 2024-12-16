@@ -11,6 +11,12 @@ def get_user_reception_key(user_id):
 def get_invitation_key(reception_id, user_id):
     return f'invitation:{reception_id}:{user_id}'
 
+def get_arena_participants_key(arena_id, user_id):
+    return f'arena_participants:{arena_id, user_id}'
+
+def get_playing_reception_key():
+    return 'playing_reception'
+
 async def is_user_in_reception(user_id):
     return await get_current_reception(user_id) is not None
 
@@ -64,7 +70,7 @@ async def is_invited(reception_id, user_id):
 
 async def set_redis_invitation(reception_id, user_id, ttl=3000): # 일단 300초
     invitation_key = get_invitation_key(reception_id, user_id)
-    await redis_client.setex(invitation_key, ttl, "invited")
+    await redis_client.setex(invitation_key, ttl, 1)
     
 async def add_to_blacklist(token, ttl=3000):
     await redis_client.sadd("blacklist", token)
@@ -72,3 +78,21 @@ async def add_to_blacklist(token, ttl=3000):
     
 async def is_blacklisted(token):
     return await redis_client.sismember("blacklist", token)
+
+async def set_redis_playing_reception(reception_id):
+    key = get_playing_reception_key()
+    await redis_client.sadd(key, reception_id)
+
+async def is_playing(reception_id):
+    key = get_playing_reception_key()
+    return await redis_client.sismember(key, reception_id) is not None
+
+async def remove_redis_playing_reception(reception_id):
+    key = get_playing_reception_key()
+    await redis_client.srem(key, reception_id)
+
+# game
+
+async def set_redis_arena_participants(arena_id, user_id, ttl=3000):
+    key = get_arena_participants_key(arena_id, user_id)
+    await redis_client.set(key, 1, ex=ttl)
