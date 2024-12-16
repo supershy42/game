@@ -13,27 +13,24 @@ from config.services import get_user
 from .models import Reception
 import asyncio
 from config.close_codes import CloseCode
+from urllib.parse import parse_qs
+from .jwt_utils import verify_ws_token
 
 
 class ReceptionConsumer(AsyncWebsocketConsumer):
     async def connect(self):
-        self.reception_id = self.scope['url_route']['kwargs']['reception_id']
-        self.reception_group_name = f'reception_{self.reception_id}'
-        self.user_id = self.scope['user_id']
         self.is_added = False
-        # token = self.scope['token']
+        self.reception_id = self.scope['url_route']['kwargs']['reception_id']
+        self.user_id = self.scope['user_id']
+        self.user = await get_user(self.user_id)
         
-        try:
-            self.reception = await Reception.objects.aget(id=self.reception_id)
-        except Reception.DoesNotExist:
-            await self.close(code=CloseCode.NO_RECEPTION)
+        query = parse_qs(self.scope['query_string'].decode())
+        token = query.get('token', [None])[0]
+        if not await self.validate_token(token):
+            await self.close(code=CloseCode.INVALID_TOKEN)
             return
         
-        user = await get_user(self.user_id)
-        if not user:
-            await self.close(code=CloseCode.NO_USER)
-            return
-        self.user = user
+        self.reception_group_name = f'reception_{self.reception_id}'
         self.user_name = self.user.get('nickname')
         
         if await is_user_in_reception(self.user_name):
@@ -78,6 +75,28 @@ class ReceptionConsumer(AsyncWebsocketConsumer):
         else:
             await self.send(json.dumps({'error': 'unknown message type'}))
             return
+            
+    async def validate_token(self, token):
+        # if token in used_tokens:
+        #     return False
+        # else:
+        #     used_tokens.add(token)
+        payload = verify_ws_token(token)
+        if not payload:
+            return False
+        if not self.user:
+            return False
+        
+        if self.user_id != payload.get('user_id'):
+            return False
+        if self.reception_id != payload.get('reception_id'):
+            return False
+        
+        try:
+            self.reception = await Reception.objects.aget(id=self.reception_id)
+        except Reception.DoesNotExist:
+            return False
+        return True
             
     async def handle_ready(self, data):
         if 'is_ready' not in data:

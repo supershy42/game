@@ -1,10 +1,15 @@
 import redis.asyncio as redis
-from .services import (
-    get_participants_key,
-    get_user_reception_key
-)
 
 redis_client = redis.Redis(host='localhost', port=6379, db=0)
+
+def get_participants_key(reception_id):
+    return f'reception_{reception_id}_participants'
+
+def get_user_reception_key(user_name):
+    return f'user_{user_name}_reception'
+
+def get_invitation_key(reception_id, user_id):
+    return f'invitation:{reception_id}:{user_id}'
 
 async def is_user_in_reception(user_name):
     user_reception_key = get_user_reception_key(user_name)
@@ -50,3 +55,13 @@ async def get_participants(reception_id):
     participants = await redis_client.hgetall(participants_key)
     return {k.decode(): int(v.decode()) for k, v in participants.items()}
 
+async def get_participants_count(reception_id):
+    return len(await get_participants(reception_id))
+
+async def is_invited(reception_id, user_id):
+    invitation_key = get_invitation_key(reception_id, user_id)
+    return await redis_client.get(invitation_key) is not None
+
+async def redis_invite(reception_id, user_id, ttl=300): # 일단 300초
+    invitation_key = get_invitation_key(reception_id, user_id)
+    await redis_client.setex(invitation_key, ttl, "invited")
