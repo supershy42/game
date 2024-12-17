@@ -18,6 +18,7 @@ class Arena:
         self.max_score = 3
         self._loop_task = None
         self.is_finished = False
+        self.speed = 10
         
     async def add_player(self, player: "Player", broadcast_func):
         if not self.lp:
@@ -51,8 +52,8 @@ class Arena:
                     break
                 await self.countdown(broadcast_func)
 
-            await broadcast_func('update', self.get_state())
-            await asyncio.sleep(1)
+            await broadcast_func('state', self.get_state())
+            await asyncio.sleep(1 / self.speed)
         
         await self.end_game(broadcast_func)
         

@@ -3,6 +3,7 @@ if TYPE_CHECKING:
     from .arena import Arena
 from arena.enums import Team
 from .bar import Bar
+from arena.enums import Direction
 
 class Player:
     def __init__(self, user_id, arena: "Arena"):
@@ -17,3 +18,6 @@ class Player:
     def set_team(self, team:Team):
         self.team = team
         self.bar.team = team
+        
+    def move(self, direction:Direction):
+        self.bar.move(direction)

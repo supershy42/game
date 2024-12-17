@@ -11,6 +11,7 @@ class Bar:
         self.speed = 1
         self.x = 0
         self.y = 0
+        self.margin = 3
         self.reset()
         
     def move(self, direction: Direction):
@@ -22,6 +23,6 @@ class Bar:
     def reset(self):
         self.y = (self.arena.height - self.length) // 2
         if self.team == Team.LEFT:
-            self.x = 0
+            self.x = 0 + self.margin
         elif self.team == Team.RIGHT:
-            self.x = self.arena.width - self.width
+            self.x = self.arena.width - self.width - self.margin

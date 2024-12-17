@@ -11,7 +11,7 @@ class Ball:
         self.arena = arena
         self.x = arena.width // 2
         self.y = arena.height // 2
-        self.speed = 30
+        self.speed = 3
         self.velocity = {"x": self.speed, "y": self.speed}
         self.radius = 1
         
