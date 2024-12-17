@@ -1,11 +1,11 @@
-from arena.enums import Direction
-from .player import Player
+from .arena import Arena
 from arena.enums import Team
+from arena.enums import Direction
 
 class Bar:
-    def __init__(self, player: Player):
-        self.player = player
-        self.arena = player.arena
+    def __init__(self, arena: "Arena", team: Team):
+        self.arena = arena
+        self.team = team
         self.length = 6
         self.width = 1
         self.speed = 1
@@ -21,7 +21,7 @@ class Bar:
 
     def reset(self):
         self.y = (self.arena.height - self.length) // 2
-        if self.player.team == Team.LEFT:
+        if self.team == Team.LEFT:
             self.x = 0
-        elif self.player.team == Team.RIGHT:
+        elif self.team == Team.RIGHT:
             self.x = self.arena.width - self.width
