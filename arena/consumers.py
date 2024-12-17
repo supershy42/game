@@ -3,9 +3,9 @@ from .services import get_arena_group_name
 from .domain.arena import Arena
 from .domain.player import Player
 import json
-import asyncio
 from config.services import get_user_name
 from .domain.arena_manager import ArenaManager
+from .enums import Direction
 
 class ArenaConsumer(AsyncWebsocketConsumer):
     async def connect(self):
@@ -21,11 +21,11 @@ class ArenaConsumer(AsyncWebsocketConsumer):
         await self.channel_layer.group_add(self.arena_group_name, self.channel_name)
         
         self.arena:Arena = ArenaManager.get_arena(self.arena_id)
-        player = Player(self.user_id, self.arena)
-        team = await self.arena.add_player(player, self.broadcast_message)
+        self.player = Player(self.user_id, self.arena)
+        self.team = await self.arena.add_player(self.player, self.broadcast_message)
         await self.send_json({
             'type': 'team',
-            'message': team.value
+            'message': self.team.value
             })
         
     async def disconnect(self, close_code):
@@ -35,7 +35,27 @@ class ArenaConsumer(AsyncWebsocketConsumer):
         )
         
     async def receive(self, text_data):
-        return
+        try:
+            data = json.loads(text_data)
+        except json.JSONDecodeError:
+            await self.send_json({'error': 'json decode error'})
+            return
+        message_type = data.get('type')
+        
+        if message_type == 'move':
+            direction = data.get('direction')
+            await self.handle_move(direction)
+        
+    async def handle_move(self, direction):
+        if direction == Direction.UP.value:
+            self.player.move(Direction.UP)
+        elif direction == Direction.DOWN.value:
+            self.player.move(Direction.DOWN)
+        else:
+            await self.send_json({
+                'type': 'error',
+                'message': 'invalid direction' 
+                })
         
     async def broadcast_message(self, message_type, message):
         await self.channel_layer.group_send(
