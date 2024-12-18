@@ -34,7 +34,7 @@ class ReceptionConsumer(AsyncWebsocketConsumer):
         query = parse_qs(self.scope['query_string'].decode())
         self.token = query.get('token', [None])[0]
         
-        if not self.validate_access():
+        if not await self.validate_access():
             await self.close(code=CloseCode.INVALID_ACCESS)
             return
         
