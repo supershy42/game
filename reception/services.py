@@ -11,7 +11,7 @@ from .redis_utils import (
     is_blacklisted,
     get_channel_name,
 )
-from config.services import get_user, get_invitation_group_name, get_user
+from config.services import get_user
 from channels.layers import get_channel_layer
 from .jwt_utils import verify_ws_token
 
