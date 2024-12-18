@@ -48,7 +48,7 @@ async def should_remove_reception(reception_id):
         return True
     return False
     
-async def should_start_game(reception_id):
+async def should_start_arena(reception_id):
     participants = await get_participants(reception_id)
 
     if len(participants) > 1:

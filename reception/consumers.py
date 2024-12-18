@@ -5,7 +5,7 @@ from .redis_utils import (
     remove_user_from_reception,
     update_user_state,
     should_remove_reception,
-    should_start_game,
+    should_start_arena,
     add_to_blacklist,
     set_redis_playing_reception,
     set_redis_arena_participants,
@@ -101,7 +101,7 @@ class ReceptionConsumer(AsyncWebsocketConsumer):
         
         await self.broadcastUserUpdate()
         
-        if await should_start_game(self.reception_id):
+        if await should_start_arena(self.reception_id):
             await set_redis_playing_reception(self.reception_id)
             # 브로드캐스트
             await self.channel_layer.group_send(

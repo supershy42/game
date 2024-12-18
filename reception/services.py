@@ -56,7 +56,7 @@ async def invite(from_user_id, to_user_id, from_user_name):
     await channel_layer.send(
         channel_name,
         {
-            "type": "game.invitation",
+            "type": "reception.invitation",
             "sender": from_user_name,
             "reception_id": reception_id
         }
