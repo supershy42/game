@@ -37,7 +37,10 @@ class ReceptionInvitationSerializer(serializers.Serializer):
     to_user_id = serializers.IntegerField(required=True)
     
     def validate_to_user_id(self, value):
-        if not async_to_sync(get_user)(value):
+        token = self.context.get('token')
+        if not token:
+            raise serializers.ValidationError("Token missing.")
+        if not async_to_sync(get_user)(value, token):
             raise serializers.ValidationError("User does not exist.")
         if value == self.context['from_user_id']:
             raise serializers.ValidationError("You cannot invite yourself.")

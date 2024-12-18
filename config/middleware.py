@@ -22,6 +22,7 @@ class CustomHttpMiddleware(MiddlewareMixin):
 class CustomWsMiddleware(BaseMiddleware):
     async def __call__(self, scope, receive, send):
         token = get_jwt(scope['headers'])
+        # token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzM0MTg1NDM5LCJpYXQiOjE3MzQxODUxMzksImp0aSI6IjkxODQ5ODdkODI5NjQ0MzVhZDZkNGFjYTZlODAxYTgxIiwidXNlcl9pZCI6MX0.kqOvvPqz4LiYbNGtCO4uqd2H_h3Xr6pN_DLe5lmm0T4'
         if not token:
             return await self.reject_request(send, "Authentication token missing.")
         

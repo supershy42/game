@@ -129,7 +129,7 @@ class ReceptionConsumer(AsyncWebsocketConsumer):
         
     async def broadcast_message(self, message_type, message):
         await self.channel_layer.group_send(
-            self.arena_group_name,
+            self.reception_group_name,
             {
                 'type': 'send_to_client',
                 'message_type': message_type,

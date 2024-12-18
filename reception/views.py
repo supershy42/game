@@ -40,7 +40,7 @@ class ReceptionJoinView(APIView):
             async_to_sync(validate_join_reception)(reception_id, user_id, password)
             message = {
                 "url": reception_websocket_url(reception_id),
-                "invite_token": create_ws_token(user_id, reception_id)
+                "token": create_ws_token(user_id, reception_id)
             }
             return response_ok(message=message)
         except CustomValidationError as e:
@@ -49,7 +49,7 @@ class ReceptionJoinView(APIView):
 class ReceptionInvitationView(APIView):
     def post(self, request):
         from_user_id = request.user_id
-        serializer = ReceptionInvitationSerializer(data=request.data, context={'from_user_id': from_user_id})
+        serializer = ReceptionInvitationSerializer(data=request.data, context={'from_user_id': from_user_id, 'token': request.token})
         serializer.is_valid(raise_exception=True)
         to_user_id = serializer.validated_data['to_user_id']
         from_user_name = async_to_sync(get_user_name)(from_user_id, request.token)
