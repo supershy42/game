@@ -9,6 +9,7 @@ from .redis_utils import (
     get_current_reception,
     set_redis_invitation,
     is_blacklisted,
+    get_channel_name,
 )
 from config.services import get_user, get_invitation_group_name, get_user
 from channels.layers import get_channel_layer
@@ -49,10 +50,13 @@ async def invite(from_user_id, to_user_id, from_user_name):
     # 친구 상태 검증 해야 되나?
 
     channel_layer = get_channel_layer()
-    await channel_layer.group_send(
-        get_invitation_group_name(to_user_id), # user service에서 웹소켓 채널 관리해줘야 함
+    channel_name = await get_channel_name(to_user_id)
+    if not channel_name:
+        raise CustomValidationError(ErrorType.NOT_ONLINE)
+    await channel_layer.send(
+        channel_name,
         {
-            "type": "invitation_message",
+            "type": "game.invitation",
             "sender": from_user_name,
             "reception_id": reception_id
         }

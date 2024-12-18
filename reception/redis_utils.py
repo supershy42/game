@@ -17,6 +17,9 @@ def get_arena_participants_key(arena_id, user_id):
 def get_playing_reception_key():
     return 'playing_reception'
 
+def get_channel_name_key():
+    return 'user_channels'
+
 async def is_user_in_reception(user_id):
     return await get_current_reception(user_id) is not None
 
@@ -90,6 +93,10 @@ async def is_playing(reception_id):
 async def remove_redis_playing_reception(reception_id):
     key = get_playing_reception_key()
     await redis_client.srem(key, reception_id)
+    
+async def get_channel_name(user_id):
+    channel_name = await redis_client.hget(get_channel_name_key(), user_id)
+    return channel_name.decode() if channel_name else None
 
 # game
 
