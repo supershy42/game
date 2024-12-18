@@ -6,6 +6,8 @@ import json
 from config.services import get_user_name
 from .domain.arena_manager import ArenaManager
 from .enums import Direction
+from reception.services import reception_websocket_url
+from reception.redis_utils import remove_redis_playing_reception
 
 class ArenaConsumer(AsyncWebsocketConsumer):
     async def connect(self):
@@ -21,8 +23,9 @@ class ArenaConsumer(AsyncWebsocketConsumer):
         await self.channel_layer.group_add(self.arena_group_name, self.channel_name)
         
         self.arena:Arena = ArenaManager.get_arena(self.arena_id)
+        self.arena.set_messanger(self.arena_group_name, self.broadcast_message)
         self.player = Player(self.user_id, self.arena)
-        self.team = await self.arena.add_player(self.player, self.broadcast_message)
+        self.team = await self.arena.add_player(self.player)
         await self.send_json({
             'type': 'team',
             'message': self.team.value
@@ -33,6 +36,12 @@ class ArenaConsumer(AsyncWebsocketConsumer):
             self.arena_group_name,
             self.channel_name
         )
+        
+        if self.arena.is_started() and not self.arena.is_finished:
+            await self.broadcast_message('exit', f'{self.user_name} is exit arena.')
+            await self.arena.forfeit(self.user_id)
+            
+        await self.arena.remove_player(self.player)
         
     async def receive(self, text_data):
         try:
@@ -56,6 +65,18 @@ class ArenaConsumer(AsyncWebsocketConsumer):
                 'type': 'error',
                 'message': 'invalid direction' 
                 })
+            
+    async def arena_end(self, event):
+        message = {
+            'type': 'arena.end',
+            'result': event['message'],
+            'url': reception_websocket_url(self.arena_id)
+        }
+        await self.send_json(message)
+        
+        await remove_redis_playing_reception(self.arena_id)
+        
+        await self.close()
         
     async def broadcast_message(self, message_type, message):
         await self.channel_layer.group_send(
