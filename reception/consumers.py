@@ -107,14 +107,14 @@ class ReceptionConsumer(AsyncWebsocketConsumer):
             await self.channel_layer.group_send(
                 self.reception_group_name,
                 {
-                    'type': 'game.start'
+                    'type': 'move_to_arena'
                 }
             )
             
-    async def game_start(self, event):
+    async def move_to_arena(self, event):
         await set_redis_arena_participants(self.reception_id, self.user_id)
         await self.send(text_data=json.dumps({
-            'type': 'start',
+            'type': 'move',
             'url': arena_websocket_url(self.reception_id)
         }))
         
@@ -124,21 +124,21 @@ class ReceptionConsumer(AsyncWebsocketConsumer):
         )
         
     async def broadcastUserUpdate(self):
-        content = await get_participants_detail(self.reception_id, self.scope['token'])
-        await self.broadcast_message('participants', content)
+        message = await get_participants_detail(self.reception_id, self.scope['token'])
+        await self.broadcast_message('participants', message)
         
-    async def broadcast_message(self, message_type, content):
+    async def broadcast_message(self, message_type, message):
         await self.channel_layer.group_send(
-            self.reception_group_name,
+            self.arena_group_name,
             {
                 'type': 'send_to_client',
                 'message_type': message_type,
-                'content': content
+                'message': message
             }
         )
 
     async def send_to_client(self, event):
         await self.send(text_data=json.dumps({
             'type': event['message_type'],
-            'content': event['content']
+            'message': event['message']
         }))
