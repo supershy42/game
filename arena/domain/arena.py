@@ -2,6 +2,7 @@ from typing import TYPE_CHECKING
 from .ball import Ball
 from arena.enums import Team
 import asyncio
+from config.consumer_utils import broadcast_event
 
 if TYPE_CHECKING:
     from .player import Player
@@ -19,26 +20,48 @@ class Arena:
         self._loop_task = None
         self.is_finished = False
         self.speed = 10
-        
-    async def add_player(self, player: "Player", broadcast_func):
+        self.group_name = None
+        self.broadcast_func = None
+    
+    def set_messanger(self, group_name, broadcast_func):
+        if self.group_name is None:
+            self.group_name = group_name
+        if self.broadcast_func is None:
+            self.broadcast_func = broadcast_func
+    
+    async def add_player(self, player: "Player"):
         if not self.lp:
             player.set_team(Team.LEFT)
             self.lp = player
-            await broadcast_func('waiting', 'Waiting for other player.')
-            return Team.LEFT
         elif not self.rp:
             player.set_team(Team.RIGHT)
             self.rp = player
-            await self.play(broadcast_func)
-            return Team.RIGHT
+        else:
+            return None
+        
+        if self.lp and self.rp:
+            await self.play()
+        else:
+            await self.broadcast_func('waiting', 'Waiting for other player.')
+        
+        return player.team
+        
+    async def remove_player(self, player: "Player"):
+        if player is self.lp:
+            self.lp = None
+        elif player is self.rp:
+            self.rp = None
             
-    async def play(self, broadcast_func):
+    def is_started(self):
+        return self._loop_task is not None
+            
+    async def play(self):
         if self._loop_task is None:
-            self._loop_task = asyncio.create_task(self._game_loop(broadcast_func))
+            self._loop_task = asyncio.create_task(self._game_loop())
             
-    async def _game_loop(self, broadcast_func):
-        await self.start(broadcast_func)
-        await self.countdown(broadcast_func)
+    async def _game_loop(self):
+        await self.start()
+        await self.countdown()
         
         while not self.is_finished:
             self.ball.update_position()
@@ -46,33 +69,39 @@ class Arena:
 
             round_result = self.check_round_end()
             if round_result:
-                await broadcast_func('round.over', self.get_scores())
+                await self.broadcast_func('round.over', self.get_scores())
                 self.reset_round()
                 if self.check_winner():
                     break
-                await self.countdown(broadcast_func)
+                await self.countdown()
 
-            await broadcast_func('state', self.get_state())
+            await self.broadcast_func('state', self.get_state())
             await asyncio.sleep(1 / self.speed)
         
-        await self.end_game(broadcast_func)
+        await self.end_game()
         
-    async def countdown(self, broadcast_func):
+    async def countdown(self):
         countdown = 3
         while countdown > 0:
-            await broadcast_func('countdown', countdown)
+            await self.broadcast_func('countdown', countdown)
             await asyncio.sleep(1)
             countdown -= 1
             
-    async def start(self, broadcast_func):
-        print("start!!")
-        await broadcast_func('start', 'Arena is starting!')
+    async def start(self):
+        await self.broadcast_func('start', 'Arena is starting!')
         
-    async def end_game(self, broadcast_func):
-        print("Arena ended.")
+    async def end_game(self):
+        self._loop_task = None
         winner = self.check_winner()
         if winner:
-            await broadcast_func('end', {'winner': winner.user_id})
+            arena_result = {
+                'winner': winner.user_id,
+                "lp_score": self.lp.score,
+                "rp_score": self.rp.score,
+                "lp_user_id": self.lp.user_id,
+                "rp_user_id": self.rp.user_id,
+                }
+            await broadcast_event(self.group_name, 'arena.end', arena_result)
         
     def get_state(self):
         return {
@@ -80,6 +109,27 @@ class Arena:
             "lp_bar": self.lp.bar.y,
             "rp_bar": self.rp.bar.y,
         }
+    
+    async def forfeit(self, exit_user_id):
+        if self._loop_task:
+            self._loop_task.cancel()
+            try:
+                await self._loop_task
+            except asyncio.CancelledError:
+                if exit_user_id == self.lp.user_id:
+                    self.lp.score = 0
+                    self.rp.score = self.max_score
+                elif exit_user_id == self.rp.user_id:
+                    self.rp.score = 0
+                    self.lp.score = self.max_score
+                await self.end_game()
+        
+    def get_oppenent(self, user_id):
+        if user_id == self.lp.user_id:
+            return self.rp.user_id
+        elif user_id == self.rp.user_id:
+            return self.lp.user_id
+        return None
         
     def get_scores(self):
         return {
