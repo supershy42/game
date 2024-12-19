@@ -43,7 +43,7 @@ async def update_user_state(reception_id, user_id, is_ready):
     
 async def should_remove_reception(reception_id):
     participants = await get_participants(reception_id)
-    
+
     if len(participants) < 1:
         return True
     return False
@@ -88,7 +88,7 @@ async def set_redis_playing_reception(reception_id):
 
 async def is_playing(reception_id):
     key = get_playing_reception_key()
-    return await redis_client.sismember(key, reception_id) is not None
+    return await redis_client.sismember(key, reception_id)
 
 async def remove_redis_playing_reception(reception_id):
     key = get_playing_reception_key()
