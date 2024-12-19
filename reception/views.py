@@ -4,7 +4,7 @@ from rest_framework import status
 from .serializers import ReceptionSerializer, ReceptionJoinSerializer, ReceptionInvitationSerializer
 from rest_framework.generics import ListAPIView
 from .models import Reception
-from .services import websocket_reception_url, validate_join_reception, invite
+from .services import reception_websocket_url, validate_join_reception, invite
 from .jwt_utils import create_ws_token
 from config.response_builder import response_error, response_ok
 from config.custom_validation_error import CustomValidationError
@@ -39,7 +39,7 @@ class ReceptionJoinView(APIView):
         try:
             async_to_sync(validate_join_reception)(reception_id, user_id, password)
             message = {
-                "reception_ws_url": websocket_reception_url(reception_id),
+                "url": reception_websocket_url(reception_id),
                 "invite_token": create_ws_token(user_id, reception_id)
             }
             return response_ok(message=message)
