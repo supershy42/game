@@ -1,5 +1,7 @@
 from rest_framework import serializers
 from .models import Reception
+from config.services import get_user
+from asgiref.sync import async_to_sync
 
 class ReceptionSerializer(serializers.ModelSerializer):
     password = serializers.CharField(
@@ -30,3 +32,13 @@ class ReceptionSerializer(serializers.ModelSerializer):
     
 class ReceptionJoinSerializer(serializers.Serializer):
     password = serializers.CharField(max_length=20, required=False, allow_null=True, allow_blank=False)
+    
+class ReceptionInvitationSerializer(serializers.Serializer):
+    to_user_id = serializers.IntegerField(required=True)
+    
+    def validate_to_user_id(self, value):
+        if not async_to_sync(get_user)(value):
+            raise serializers.ValidationError("User does not exist.")
+        if value == self.context['from_user_id']:
+            raise serializers.ValidationError("You cannot invite yourself.")
+        return value

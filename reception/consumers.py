@@ -7,8 +7,10 @@ from .redis_utils import (
     update_user_state,
     should_remove_reception,
     should_start_game,
-    get_participants
+    add_to_blacklist,
+    is_blacklisted
 )
+from .services import get_participants_detail
 from config.services import get_user
 from .models import Reception
 import asyncio
@@ -21,8 +23,8 @@ class ReceptionConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         self.is_added = False
         self.reception_id = self.scope['url_route']['kwargs']['reception_id']
+        self.reception_group_name = f'reception_{self.reception_id}'
         self.user_id = self.scope['user_id']
-        self.user = await get_user(self.user_id)
         
         query = parse_qs(self.scope['query_string'].decode())
         token = query.get('token', [None])[0]
@@ -30,11 +32,12 @@ class ReceptionConsumer(AsyncWebsocketConsumer):
             await self.close(code=CloseCode.INVALID_TOKEN)
             return
         
-        self.reception_group_name = f'reception_{self.reception_id}'
-        self.user_name = self.user.get('nickname')
-        
-        if await is_user_in_reception(self.user_name):
-            await self.close(code=CloseCode.ALREADY_IN_ROOM)
+        if not await self.validate_reception():
+            await self.close(code=CloseCode.INVALID_RECEPTION)
+            return
+
+        if not await self.validate_user():
+            await self.close(code=CloseCode.INVALID_USER)
             return
         
         await self.accept()
@@ -44,23 +47,24 @@ class ReceptionConsumer(AsyncWebsocketConsumer):
             self.channel_name
         )
         
-        await add_user_to_reception(self.reception_id, self.user_name)
+        await add_to_blacklist(token)
+        await add_user_to_reception(self.reception_id, self.user_id)
         self.is_added = True
         
-        await self.broadcast_message('participants', await get_participants(self.reception_id))
+        await self.broadcastUserUpdate()
         
     async def disconnect(self, close_code):
-        if self.is_added:
-            await remove_user_from_reception(self.reception_id, self.user_name)
-            if await should_remove_reception(self.reception_id):
-                await Reception.objects.filter(id=self.reception_id).adelete()
-            else:
-                await self.broadcast_message('participants', await get_participants(self.reception_id))
-        
         await self.channel_layer.group_discard(
             self.reception_group_name,
             self.channel_name
         )
+            
+        if self.is_added:
+            await remove_user_from_reception(self.reception_id, self.user_id)
+            if await should_remove_reception(self.reception_id):
+                await Reception.objects.filter(id=self.reception_id).adelete()
+            else:
+                await self.broadcastUserUpdate()
         
     async def receive(self, text_data):
         try:
@@ -77,24 +81,27 @@ class ReceptionConsumer(AsyncWebsocketConsumer):
             return
             
     async def validate_token(self, token):
-        # if token in used_tokens:
-        #     return False
-        # else:
-        #     used_tokens.add(token)
+        if is_blacklisted(token):
+            return False
+        
         payload = verify_ws_token(token)
         if not payload:
-            return False
-        if not self.user:
             return False
         
         if self.user_id != payload.get('user_id'):
             return False
         if self.reception_id != payload.get('reception_id'):
             return False
-        
-        try:
-            self.reception = await Reception.objects.aget(id=self.reception_id)
-        except Reception.DoesNotExist:
+        return True
+    
+    async def validate_reception(self):
+        return await Reception.objects.filter(id=self.reception_id).aexists()
+    
+    async def validate_user(self):
+        user = await get_user(self.user_id, self.scope['token'])
+        if not user:
+            return False
+        if await is_user_in_reception(self.user_id):
             return False
         return True
             
@@ -105,9 +112,9 @@ class ReceptionConsumer(AsyncWebsocketConsumer):
         
         is_ready = data['is_ready']
         
-        await update_user_state(self.reception_id, self.user_name, is_ready)
+        await update_user_state(self.reception_id, self.user_id, is_ready)
         
-        await self.broadcast_message('participants', await get_participants(self.reception_id))
+        await self.broadcastUserUpdate()
         
         if await should_start_game(self.reception_id):
             await self.start_game()
@@ -118,6 +125,10 @@ class ReceptionConsumer(AsyncWebsocketConsumer):
         })
         await asyncio.sleep(3)
         await self.close(code=CloseCode.GAME_STARTED)
+        
+    async def broadcastUserUpdate(self):
+        content = await get_participants_detail(self.reception_id, self.scope['token'])
+        await self.broadcast_message('participants', content)
         
     async def broadcast_message(self, message_type, content):
         await self.channel_layer.group_send(
