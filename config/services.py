@@ -1,8 +1,8 @@
 import aiohttp
-from config.settings import USER_SERVICE
+from config.settings import USER_SERVICE_URL
 
 async def get_user(user_id, token):
-    request_url = f'{USER_SERVICE}profile/{user_id}/'
+    request_url = f'{USER_SERVICE_URL}profile/{user_id}/'
     headers = {'Authorization': f'Bearer {token}'}
     
     async with aiohttp.ClientSession() as session:
