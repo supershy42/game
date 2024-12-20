@@ -25,12 +25,11 @@ INSTALLED_APPS = [
     'channels',
     'reception',
     'arena',
-    'corsheaders'
+    'tournament',
 ]
 
 # 위에서부터 맞는 미들웨어 찾으므로 순서 중요
 MIDDLEWARE = [
-    'corsheaders.middleware.CorsMiddleware',
     'config.middleware.CustomHttpMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -101,7 +100,7 @@ TIME_ZONE = 'Asia/Seoul'
 
 USE_I18N = True
 
-USE_TZ = True
+USE_TZ = False
 
 
 # Static files (CSS, JavaScript, Images)
@@ -127,9 +126,6 @@ CHANNEL_LAYERS = {
     },
 }
 
-# CORS
-CORS_ALLOW_ALL_ORIGINS = True
-
 # PAGENATIOIN
 REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
@@ -141,4 +137,4 @@ from decouple import config
 
 WS_SECRET_KEY = config("WS_SECRET_KEY")
 WS_ALGORITHM = config("WS_ALGORITHM")
-USER_SERVICE = config("USER_SERVICE")
+USER_SERVICE_URL = config("USER_SERVICE_URL")
