@@ -76,7 +76,7 @@ async def validate_user_connect(user_id, token):
     return True
 
 async def validate_reception_token(user_id, reception_id, token):
-    if is_blacklisted(token):
+    if await is_blacklisted(token):
         return False
     
     payload = verify_ws_token(token)
