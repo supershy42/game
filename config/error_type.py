@@ -15,6 +15,10 @@ class ErrorType(Enum):
     RECEPTION_FULL = (status.HTTP_403_FORBIDDEN, "The reception is full.")
     NO_RECEPTION = (status.HTTP_403_FORBIDDEN, "No reception.")
     NOT_ONLINE = (status.HTTP_403_FORBIDDEN, "Your friend is not online.")
+    TOURNAMENT_FULL = (status.HTTP_403_FORBIDDEN, "The tournament is full.")
+    TOURNAMENT_NOT_FULL = (status.HTTP_403_FORBIDDEN, "Tournament is not full.")
+    ALREADY_EXISTS = (status.HTTP_403_FORBIDDEN, "User already joined tournament.")
+    TOURNAMENT_NOT_WAITING = (status.HTTP_403_FORBIDDEN, "Tournament is not in waiting state.")
     
     USER_NOT_FOUND = (status.HTTP_404_NOT_FOUND, "User not found.")
     RECEPTION_NOT_FOUND = (status.HTTP_404_NOT_FOUND, "Reception not found.")

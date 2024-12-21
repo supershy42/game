@@ -9,7 +9,7 @@ from .jwt_utils import create_ws_token
 from config.response_builder import response_error, response_ok
 from config.custom_validation_error import CustomValidationError
 from asgiref.sync import async_to_sync
-from config.services import get_user_name
+from config.services import UserService
 
 class CreateReceptionView(APIView):
     def post(self, request):
@@ -52,7 +52,7 @@ class ReceptionInvitationView(APIView):
         serializer = ReceptionInvitationSerializer(data=request.data, context={'from_user_id': from_user_id, 'token': request.token})
         serializer.is_valid(raise_exception=True)
         to_user_id = serializer.validated_data['to_user_id']
-        from_user_name = async_to_sync(get_user_name)(from_user_id, request.token)
+        from_user_name = async_to_sync(UserService.get_user_name)(from_user_id, request.token)
         try:
             async_to_sync(invite)(from_user_id, to_user_id, from_user_name)
             return response_ok()
