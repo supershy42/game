@@ -2,17 +2,15 @@ import asyncio
 from config.custom_validation_error import CustomValidationError
 from config.error_type import ErrorType
 from .models import Reception
-from .redis_utils import (
+from config.redis_utils import (
     is_user_in_reception,
     get_participants,
     is_invited,
     get_current_reception,
     set_redis_invitation,
     is_blacklisted,
-    get_channel_name,
 )
-from config.services import get_user
-from channels.layers import get_channel_layer
+from config.services import UserService
 from .jwt_utils import verify_ws_token
 
 def reception_websocket_url(reception_id):
@@ -26,7 +24,7 @@ async def get_participants_count(reception_id):
 
 async def get_participants_detail(reception_id, token):
     participants = await get_participants(reception_id)
-    tasks = {k: get_user(k, token) for k in participants.keys()}
+    tasks = {k: UserService.get_user(k, token) for k in participants.keys()}
     users = await asyncio.gather(*tasks.values())
     return {user.get('nickname'): participants[k] for k, user in zip(tasks.keys(), users)}
 
@@ -49,26 +47,19 @@ async def invite(from_user_id, to_user_id, from_user_name):
         raise CustomValidationError(ErrorType.NO_RECEPTION)
     # 친구 상태 검증 해야 되나?
 
-    channel_layer = get_channel_layer()
-    channel_name = await get_channel_name(to_user_id)
-    if not channel_name:
-        raise CustomValidationError(ErrorType.NOT_ONLINE)
-    await channel_layer.send(
-        channel_name,
-        {
-            "type": "reception.invitation",
-            "sender": from_user_name,
-            "reception_id": reception_id
-        }
-    )
-    
+    await UserService.send_notification(to_user_id, {
+        "type": "reception.invitation",
+        "sender": from_user_name,
+        "reception_id": reception_id
+    })
+
     await set_redis_invitation(reception_id, to_user_id)
     
 async def reception_exists(reception_id):
     return await Reception.objects.filter(id=reception_id).aexists()
 
 async def validate_user_connect(user_id, token):
-    user = await get_user(user_id, token)
+    user = await UserService.get_user(user_id, token)
     if not user:
         return False
     if await is_user_in_reception(user_id):
