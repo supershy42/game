@@ -2,6 +2,12 @@ from rest_framework.views import APIView
 from .serializers import TournamentSerializer
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework import generics
+from .models import Tournament
+from asgiref.sync import async_to_sync
+from .services import TournamentService
+from config.custom_validation_error import CustomValidationError
+from config.response_builder import response_error, response_ok
 
 class TournamentCreateView(APIView):
     def post(self, request):
@@ -15,13 +21,20 @@ class TournamentCreateView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         
         
+class TournamentListView(generics.ListAPIView):
+    queryset = Tournament.objects.all()
+    serializer_class = TournamentSerializer
+        
 # class TournamentDetailView(APIView):
     
-        
-# class TournamentListView(APIView):
-    
 
-# class TournamentJoinView(APIView):
-    
+class TournamentJoinView(APIView):
+    def post(self, request, tournament_id):
+        user_id = request.user_id
+        try:
+            async_to_sync(TournamentService.join)(tournament_id, user_id)
+        except CustomValidationError as e:
+            return response_error(e)
+        return response_ok()
 
 # class TournamentStartView(APIView):
