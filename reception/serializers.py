@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from .models import Reception
-from config.services import get_user
+from config.services import UserService
 from asgiref.sync import async_to_sync
 
 class ReceptionSerializer(serializers.ModelSerializer):
@@ -40,7 +40,7 @@ class ReceptionInvitationSerializer(serializers.Serializer):
         token = self.context.get('token')
         if not token:
             raise serializers.ValidationError("Token missing.")
-        if not async_to_sync(get_user)(value, token):
+        if not async_to_sync(UserService.get_user)(value, token):
             raise serializers.ValidationError("User does not exist.")
         if value == self.context['from_user_id']:
             raise serializers.ValidationError("You cannot invite yourself.")

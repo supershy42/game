@@ -3,11 +3,11 @@ from .services import get_arena_group_name
 from .domain.arena import Arena
 from .domain.player import Player
 import json
-from config.services import get_user_name
+from config.services import UserService
 from .domain.arena_manager import ArenaManager
 from .enums import Direction
 from reception.services import reception_websocket_url
-from reception.redis_utils import remove_redis_playing_reception
+from config.redis_utils import remove_redis_playing_reception
 
 class ArenaConsumer(AsyncWebsocketConsumer):
     async def connect(self):
@@ -15,7 +15,7 @@ class ArenaConsumer(AsyncWebsocketConsumer):
         self.arena_group_name = get_arena_group_name(self.arena_id)
         self.user_id = self.scope.get('user_id')
         self.token = self.scope.get('token')
-        self.user_name = await get_user_name(self.user_id, self.token)
+        self.user_name = await UserService.get_user_name(self.user_id, self.token)
         
         # redis에서 참가자 명단에 있는지 검증해야 함
         
