@@ -31,7 +31,7 @@ class TestServiceFunctions(IsolatedAsyncioTestCase):
     async def test_invite_valid(self):
         with patch("reception.services.get_current_reception", return_value=1), \
              patch("reception.services.set_redis_invitation"), \
-             patch("reception.services.get_channel_layer", return_value=AsyncMock()):
+             patch("config.services.UserService.send_notification", return_value=AsyncMock()):
             try:
                 await invite(from_user_id=1, to_user_id=2, from_user_name="TestUser")
             except CustomValidationError:
@@ -55,7 +55,7 @@ class TestReceptionViews(APITestCase):
     def test_join_reception_success(self):
         with patch("reception.views.validate_join_reception", return_value=None), \
              patch("reception.views.create_ws_token", return_value="ws_token"), \
-             patch("reception.redis_utils.redis_client", autospec=True) as mock_redis_client:
+             patch("config.redis_utils.redis_client", autospec=True) as mock_redis_client:
 
             mock_redis_client.sismember = AsyncMock(return_value=0)
             url = f"/api/reception/{self.reception.id}/join/"
@@ -64,12 +64,12 @@ class TestReceptionViews(APITestCase):
             response = self.client.post(url, data, format="json")
 
             self.assertEqual(response.status_code, status.HTTP_200_OK)
-            self.assertIn("reception_ws_url", response.data)
-            self.assertEqual(response.data["invite_token"], "ws_token")
+            self.assertIn("url", response.data)
+            self.assertEqual(response.data["token"], "ws_token")
 
     def test_join_reception_invalid_password(self):
         with patch("reception.views.validate_join_reception", side_effect=CustomValidationError(ErrorType.INVALID_PASSWORD)), \
-             patch("reception.redis_utils.redis_client", autospec=True) as mock_redis_client:
+             patch("config.redis_utils.redis_client", autospec=True) as mock_redis_client:
 
             mock_redis_client.sismember = AsyncMock(return_value=0)
             url = f"/api/reception/{self.reception.id}/join/"
@@ -82,7 +82,7 @@ class TestReceptionViews(APITestCase):
 
     def test_invite_success(self):
         with patch("reception.views.invite", return_value=None), \
-             patch("reception.views.get_user_name", return_value="MockedUserName"), \
+             patch("reception.views.UserService.get_user_name", return_value="MockedUserName"), \
              patch("reception.serializers.ReceptionInvitationSerializer.validate_to_user_id", return_value=True):
 
             url = "/api/reception/invite/"
@@ -95,7 +95,7 @@ class TestReceptionViews(APITestCase):
 
     def test_invite_no_reception(self):
         with patch("reception.views.invite", side_effect=CustomValidationError(ErrorType.NO_RECEPTION)), \
-             patch("reception.views.get_user_name", return_value="MockedUserName"), \
+             patch("reception.views.UserService.get_user_name", return_value="MockedUserName"), \
              patch("reception.serializers.ReceptionInvitationSerializer.validate_to_user_id", return_value=True):
 
             url = "/api/reception/invite/"
@@ -109,10 +109,11 @@ class TestReceptionViews(APITestCase):
     def test_invited_user_join_without_password(self):
         with patch("reception.views.validate_join_reception", return_value=None), \
              patch("reception.services.is_invited", return_value=True), \
-             patch("reception.views.get_user_name", return_value="MockedUserName"), \
+             patch("reception.views.UserService.get_user_name", return_value="MockedUserName"), \
+             patch("reception.services.UserService.send_notification", return_value=None), \
              patch("reception.views.create_ws_token", return_value="ws_token"), \
              patch("reception.serializers.ReceptionInvitationSerializer.validate_to_user_id", return_value=True), \
-             patch("reception.redis_utils.redis_client", autospec=True) as mock_redis_client:
+             patch("config.redis_utils.redis_client", autospec=True) as mock_redis_client:
 
             mock_redis_client.get = AsyncMock(return_value=b"1")
             mock_redis_client.hgetall = AsyncMock(return_value={"1": b"1"})
@@ -134,5 +135,5 @@ class TestReceptionViews(APITestCase):
 
             response = self.client.post(join_url, join_data, format="json")
             self.assertEqual(response.status_code, status.HTTP_200_OK)
-            self.assertIn("reception_ws_url", response.data)
-            self.assertEqual(response.data["invite_token"], "ws_token")
+            self.assertIn("url", response.data)
+            self.assertEqual(response.data["token"], "ws_token")
