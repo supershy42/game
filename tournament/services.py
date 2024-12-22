@@ -9,9 +9,9 @@ from asgiref.sync import async_to_sync
 
 class TournamentService:
     @staticmethod
-    def get_grooup_name(tournament_id):
-        return f"tournament_{tournament_id}"
-    
+    def get_websocket_url(tournament_id):
+        return f"ws/tournament/{tournament_id}/"
+
     @staticmethod
     def join(tournament_id, user_id):
         tournament = Tournament.objects.get(id=tournament_id)
@@ -43,7 +43,7 @@ class TournamentService:
         for user_id in user_ids:
             async_to_sync(UserService.send_notification)(user_id, {
                 "type":"tournament.start",
-                "url": TournamentService.get_grooup_name(tournament_id),
+                "url": TournamentService.get_websocket_url(tournament_id),
                 "message": f"The tournament \"{tournament.name}\" is starting!"
             })
             
