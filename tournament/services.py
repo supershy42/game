@@ -36,17 +36,23 @@ class TournamentService:
         if not tournament.is_full():
             raise CustomValidationError(ErrorType.TOURNAMENT_NOT_FULL)
         
-        TournamentService.set_players(tournament)
-        tournament.state = Tournament.State.IN_PROGRESS
-        tournament.save()
-        
         user_ids = TournamentService.get_participant_ids(tournament)
+        
+        TournamentService.set(tournament, user_ids)
+        
         for user_id in user_ids:
             async_to_sync(UserService.send_notification)(user_id, {
                 "type":"tournament.start",
                 "url": TournamentService.get_grooup_name(tournament_id),
                 "message": f"The tournament \"{tournament.name}\" is starting!"
             })
+            
+    @staticmethod
+    def set(tournament:Tournament, user_ids):
+        matches = TournamentService.create_matches(tournament)
+        TournamentService.assign_players(tournament, matches, user_ids)
+        tournament.state = Tournament.State.IN_PROGRESS
+        tournament.save()
         
     @staticmethod
     def update_bracket(tournament_id):
@@ -75,9 +81,7 @@ class TournamentService:
                 match.save()
 
     @staticmethod
-    def set_players(tournament:Tournament):
-        user_ids = TournamentService.get_participant_ids(tournament)
-        matches:List[Match] = TournamentService.create_matches(tournament)
+    def assign_players(tournament:Tournament, matches:List[Match], user_ids):
         max_participants = tournament.max_participants
         
         for match_number in range(max_participants // 2, max_participants):
@@ -88,7 +92,7 @@ class TournamentService:
             match.state = match.State.READY
 
     @staticmethod    
-    def create_matches(tournament: Tournament):
+    def create_matches(tournament: Tournament) -> List[Match]:
         matches = []
         for match_number in range(1, tournament.max_participants):
             round = tournament.total_rounds - int(math.log2(match_number))
