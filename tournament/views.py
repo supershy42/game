@@ -15,8 +15,9 @@ class TournamentCreateView(APIView):
         if serializer.is_valid():
             tournament = serializer.save()
             user_id = request.user_id
+            token = request.token
             try:
-                TournamentService.join(tournament.id, user_id)
+                TournamentService.join(tournament.id, user_id, token)
             except CustomValidationError as e:
                 return response_error(e)
             return Response({
@@ -36,8 +37,9 @@ class TournamentListView(generics.ListAPIView):
 class TournamentJoinView(APIView):
     def post(self, request, tournament_id):
         user_id = request.user_id
+        token = request.token
         try:
-            TournamentService.join(tournament_id, user_id)
+            TournamentService.join(tournament_id, user_id, token)
         except CustomValidationError as e:
             return response_error(e)
         return response_ok()

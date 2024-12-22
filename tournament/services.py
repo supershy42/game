@@ -12,7 +12,7 @@ class TournamentService:
         return f"ws/tournament/{tournament_id}/"
 
     @staticmethod
-    def join(tournament_id, user_id):
+    def join(tournament_id, user_id, token):
         tournament = Tournament.objects.get(id=tournament_id)
         
         if tournament.state != tournament.State.WAITING:
@@ -23,13 +23,12 @@ class TournamentService:
             raise CustomValidationError(ErrorType.ALREADY_EXISTS)
         
         TournamentParticipant.objects.create(tournament=tournament, user_id=user_id)
+        
+        if tournament.is_full():
+            TournamentService.start(tournament, token)
 
     @staticmethod
-    def start(tournament_id, user_id):
-        tournament = Tournament.objects.get(id=tournament_id)
-        
-        if tournament.creator != user_id:
-            raise CustomValidationError(ErrorType.PERPISSON_DENIED)
+    def start(tournament:Tournament, token):
         if tournament.state != tournament.State.WAITING:
             raise CustomValidationError(ErrorType.TOURNAMENT_NOT_WAITING)
         if not tournament.is_full():
@@ -42,9 +41,15 @@ class TournamentService:
         for user_id in user_ids:
             async_to_sync(UserService.send_notification)(user_id, {
                 "type":"tournament.start",
-                "url": TournamentService.get_websocket_url(tournament_id),
+                "tournament_id": tournament.id,
                 "message": f"The tournament \"{tournament.name}\" is starting!"
             })
+            
+        for user_id in user_ids:
+            user_email = async_to_sync(UserService.get_user_email)(user_id, token)
+            subject = TournamentService.get_subject(tournament)
+            message = TournamentService.get_message()
+            async_to_sync(UserService.send_email)(user_email, subject, message, token)
             
     @staticmethod
     def set(tournament:Tournament, user_ids):
@@ -99,6 +104,14 @@ class TournamentService:
             if match.left_player and match.right_player:
                 match.state = TournamentMatch.State.READY
                 match.save()
+                
+    @staticmethod
+    def get_subject(tournament: Tournament):
+        return f"The tournament \"{tournament.name}\" has started!"
+    
+    @staticmethod
+    def get_message():
+        return "Please participate in the tournament and proceed with your matches."
     
     @staticmethod
     def get_participant_ids(tournament: Tournament):
