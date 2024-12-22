@@ -32,9 +32,16 @@ class TournamentJoinView(APIView):
     def post(self, request, tournament_id):
         user_id = request.user_id
         try:
-            async_to_sync(TournamentService.join)(tournament_id, user_id)
+            TournamentService.join(tournament_id, user_id)
         except CustomValidationError as e:
             return response_error(e)
         return response_ok()
 
-# class TournamentStartView(APIView):
+class TournamentStartView(APIView):
+    def post(self, request, tournament_id):
+        user_id = request.user_id
+        try:
+            TournamentService.start(tournament_id, user_id)
+        except CustomValidationError as e:
+            return response_error(e)
+        return response_ok()
