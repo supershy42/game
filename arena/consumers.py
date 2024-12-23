@@ -5,19 +5,32 @@ from .domain.player import Player
 import json
 from config.services import UserService
 from .domain.arena_manager import ArenaManager
-from .enums import Direction
+from .enums import Direction, ArenaType
 from reception.services import reception_websocket_url
 from config.redis_utils import remove_redis_playing_reception
+from tournament.services import TournamentService
+from asgiref.sync import sync_to_async
 
 class ArenaConsumer(AsyncWebsocketConsumer):
     async def connect(self):
-        self.arena_id = self.scope['url_route']['kwargs']['arena_id']
-        self.arena_group_name = get_arena_group_name(self.arena_id)
+        kwargs = self.scope["url_route"]["kwargs"]
+        if "arena_id" in kwargs:
+            self.arena_id = self.scope['url_route']['kwargs']['arena_id']
+            self.arena_group_name = get_arena_group_name(self.arena_id)
+            self.type = ArenaType.NORMAL
+        else:
+            self.tournament_id = kwargs['tournament_id']
+            self.match_number = kwargs['match_number']
+            self.arena_id = f"tournament{self.tournament_id}_match{self.match_number}"
+            self.arena_group_name = f"group_{self.arena_id}"
+            self.type = ArenaType.TOURNAMENT
+
         self.user_id = self.scope.get('user_id')
         self.token = self.scope.get('token')
-        self.user_name = await UserService.get_user_name(self.user_id, self.token)
+        self.user_name = await UserService.get_user_name(self.user_id, self.token)        
         
         # redis에서 참가자 명단에 있는지 검증해야 함
+        # tournament매치에 해당 유저가 있는지 확인
         
         await self.accept()
         await self.channel_layer.group_add(self.arena_group_name, self.channel_name)
@@ -67,14 +80,19 @@ class ArenaConsumer(AsyncWebsocketConsumer):
                 })
             
     async def arena_end(self, event):
-        message = {
-            'type': 'arena.end',
-            'result': event['message'],
-            'url': reception_websocket_url(self.arena_id)
-        }
-        await self.send_json(message)
-        
-        await remove_redis_playing_reception(self.arena_id)
+        result = event['message']
+        if self.type == ArenaType.TOURNAMENT:
+            print("경기 종료")
+            await sync_to_async(TournamentService.handle_match_end)(self.tournament_id, self.match_number, self.user_id, result)
+        else:
+            message = {
+                'type': 'arena.end',
+                'result': result,
+                'url': reception_websocket_url(self.arena_id)
+            }
+            await self.send_json(message)
+            
+            await remove_redis_playing_reception(self.arena_id)
         
         await self.close()
         

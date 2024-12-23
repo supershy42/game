@@ -34,19 +34,69 @@ class TournamentService:
         if not tournament.is_full():
             raise CustomValidationError(ErrorType.TOURNAMENT_NOT_FULL)
         
-        user_ids = TournamentService.get_participant_ids(tournament)
-        TournamentService.set_tournament(tournament, user_ids)
-        TournamentService.notify_participants(tournament, user_ids)
-        TournamentService.send_email_to_participants(tournament, user_ids, token)
+        TournamentService.set_tournament(tournament)
+        round = Round.objects.get(tournament=tournament, round_number=1)
+        participant_ids = TournamentService.get_participant_ids(round)
+        TournamentService.notify_participants(tournament, participant_ids)
+        TournamentService.send_email_to_participants(tournament, participant_ids, token)
     
     @staticmethod
-    def set_tournament(tournament:Tournament, user_ids):
+    def set_tournament(tournament:Tournament):
         matches = TournamentService.create_matches(tournament)
-        TournamentService.assign_players(tournament, matches, user_ids)
+        TournamentService.assign_players(tournament, matches)
         tournament.state = Tournament.State.IN_PROGRESS
         tournament.save()
+        
+    @staticmethod
+    def handle_match_end(tournament_id, match_number, user_id, result):
+        tournament = Tournament.objects.get(id=tournament_id)
+        match = TournamentMatch.objects.get(
+            round__tournament=tournament,
+            match_number=match_number
+        )
+        if match.state == TournamentMatch.State.FINISHED:
+            return
+        
+        if result['lp_user_id'] == user_id:
+            user_score = result['lp_score']
+        else:
+            user_score = result['rp_score']
+        if match.left_player == user_id:
+            match.left_score = user_score
+        else:
+            match.right_score = user_score
+        match.winner = result['winner']
+        match.state = TournamentMatch.State.FINISHED
+        match.save()
 
-    @staticmethod    
+        current_round = match.round
+        if current_round.round_number == tournament.total_rounds:
+            # 우승
+            print("final win!")
+            return
+        
+        parent_match:TournamentMatch = match.parent_match
+        if match.parent_match_player_slot == TournamentMatch.Slot.LEFT:
+            parent_match.left_player = match.winner
+        else:
+            parent_match.right_player = match.winner
+            
+        if parent_match.left_player and parent_match.right_player:
+            parent_match.state = TournamentMatch.State.READY
+        parent_match.save()
+        
+        unfinished_matches = current_round.tournamentmatch_set.exclude(state=TournamentMatch.State.FINISHED)
+        if unfinished_matches.exists():
+            print("아직 경기 남음")
+            return
+        
+        next_round_number = current_round.round_number + 1
+        next_round = Round.objects.get(tournament=tournament, round_number=next_round_number)
+        
+        participant_ids = TournamentService.get_participant_ids(next_round)
+        TournamentService.notify_participants(tournament, participant_ids)
+
+    @staticmethod
     def create_matches(tournament: Tournament) -> List[TournamentMatch]:
         rounds = TournamentService.create_rounds(tournament)
         matches = []
@@ -87,20 +137,21 @@ class TournamentService:
         return rounds
 
     @staticmethod
-    def assign_players(tournament:Tournament, matches:List[TournamentMatch], user_ids):
+    def assign_players(tournament:Tournament, matches:List[TournamentMatch]):
         max_participants = tournament.max_participants
+        participant_ids = TournamentParticipant.objects.filter(tournament=tournament).values_list('user_id', flat=True)
         
         for match_number in range(max_participants // 2, max_participants):
             match = matches[match_number - 1]
             i = (match_number - max_participants // 2) * 2
-            match.left_player = user_ids[i]
-            match.right_player = user_ids[i + 1]
+            match.left_player = participant_ids[i]
+            match.right_player = participant_ids[i + 1]
             match.state = match.State.READY
             match.save()
             
     @staticmethod
-    def notify_participants(tournament, user_ids):
-        for user_id in user_ids:
+    def notify_participants(tournament, participant_ids):
+        for user_id in participant_ids:
             async_to_sync(UserService.send_notification)(user_id, {
                 "type":"tournament.start",
                 "tournament_id": tournament.id,
@@ -108,8 +159,8 @@ class TournamentService:
             })
             
     @staticmethod
-    def send_email_to_participants(tournament, user_ids, token):
-        for user_id in user_ids:
+    def send_email_to_participants(tournament, participant_ids, token):
+        for user_id in participant_ids:
             user_email = async_to_sync(UserService.get_user_email)(user_id, token)
             subject = TournamentService.get_subject(tournament)
             message = TournamentService.get_message()
@@ -124,5 +175,11 @@ class TournamentService:
         return "Please participate in the tournament and proceed with your matches."
     
     @staticmethod
-    def get_participant_ids(tournament: Tournament):
-        return TournamentParticipant.objects.filter(tournament=tournament).values_list('user_id', flat=True)
+    def get_participant_ids(round: Round):
+        participants = []
+        matches:List[TournamentMatch] = round.tournamentmatch_set.all()
+        for match in matches:
+            participants.append(match.left_player)
+            participants.append(match.right_player)
+            
+        return participants
