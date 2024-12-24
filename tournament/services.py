@@ -30,7 +30,7 @@ class TournamentService:
         tournament = Tournament.objects.get(id=tournament_id)
         
         if tournament.creator != user_id:
-            raise CustomValidationError(ErrorType.PERPISSON_DENIED)
+            raise CustomValidationError(ErrorType.PERMISSION_DENIED)
         if tournament.state != tournament.State.WAITING:
             raise CustomValidationError(ErrorType.TOURNAMENT_NOT_WAITING)
         if not tournament.is_full():
