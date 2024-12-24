@@ -114,7 +114,7 @@ class ArenaConsumer(AsyncWebsocketConsumer):
             }
             await self.send_json(message)
         else:
-            await ArenaService.save_match(result)
+            await sync_to_async(ArenaService.save_normal_match)(result)
             message = {
                 'type': 'arena.end',
                 'result': result,
