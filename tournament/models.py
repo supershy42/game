@@ -42,8 +42,18 @@ class TournamentParticipant(models.Model):
     class Meta:
         unique_together = ('tournament', 'user_id')
         
+
+class Round(models.Model):
+    tournament = models.ForeignKey(Tournament, on_delete=models.CASCADE)
+    round_number = models.PositiveIntegerField()
+        
         
 class TournamentMatch(BaseMatch):
-    tournament = models.ForeignKey(Tournament, on_delete=models.CASCADE, null=True, blank=True)
-    round = models.IntegerField(null=True, blank=True)
-    match_number = models.IntegerField(null=True, blank=True)
+    class Slot(models.TextChoices):
+        LEFT = 'left', 'Lending'
+        RIGHT = 'right', 'Right'
+    
+    round = models.ForeignKey(Round, on_delete=models.CASCADE)
+    match_number = models.PositiveIntegerField()
+    parent_match = models.ForeignKey('self', null=True, blank=True, on_delete=models.CASCADE)
+    parent_match_player_slot = models.CharField(max_length=5, choices=Slot.choices, null=True, blank=True)
