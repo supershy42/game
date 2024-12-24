@@ -4,7 +4,7 @@ if TYPE_CHECKING:
     from .arena import Arena
     from .bar import Bar
 
-from arena.enums import Team
+from arena.models import BaseMatch
 
 class Ball:
     def __init__(self, arena: "Arena"):
@@ -45,7 +45,7 @@ class Ball:
 
     def check_boundary_collision(self):
         if self.x - self.radius <= 0:  # 왼쪽 벽 충돌
-            return Team.LEFT
+            return BaseMatch.Team.LEFT
         if self.x + self.radius >= self.arena.width:  # 오른쪽 벽 충돌
-            return Team.RIGHT
+            return BaseMatch.Team.RIGHT
         return None

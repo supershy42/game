@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING
 from .ball import Ball
-from arena.enums import Team
+from arena.models import BaseMatch
 import asyncio
 from config.consumer_utils import broadcast_event
 
@@ -28,16 +28,21 @@ class Arena:
             self.group_name = group_name
         if self.broadcast_func is None:
             self.broadcast_func = broadcast_func
+            
+    def get_remaining_team(self):
+        if not self.lp:
+            return BaseMatch.Team.LEFT
+        elif not self.rp:
+            return BaseMatch.Team.RIGHT
     
     async def add_player(self, player: "Player"):
-        if not self.lp:
-            player.set_team(Team.LEFT)
+        team = player.team
+        if not self.lp and team == BaseMatch.Team.LEFT:
             self.lp = player
-        elif not self.rp:
-            player.set_team(Team.RIGHT)
+        elif not self.rp and team == BaseMatch.Team.RIGHT:
             self.rp = player
         else:
-            return None
+            return
         
         if self.lp and self.rp:
             await self.play()
@@ -154,9 +159,9 @@ class Arena:
 
     def check_round_end(self):
         result = self.ball.check_boundary_collision()
-        if result == Team.LEFT:
+        if result == BaseMatch.Team.LEFT:
             self.rp.increment_score()
-        elif result == Team.RIGHT:
+        elif result == BaseMatch.Team.RIGHT:
             self.lp.increment_score()
         return result
     

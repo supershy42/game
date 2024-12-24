@@ -4,8 +4,11 @@ class BaseMatch(models.Model):
     class State(models.TextChoices):
         PENDING = 'pending', 'Pending'
         READY = 'ready', 'Ready to Start'
-        STARTED = 'started', 'Started'
         FINISHED = 'finished', 'Finished'
+        
+    class Team(models.TextChoices):
+        LEFT = 'left', 'Lending'
+        RIGHT = 'right', 'Right'
     
     left_player = models.IntegerField(null=True)
     right_player = models.IntegerField(null=True)

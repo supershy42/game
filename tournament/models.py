@@ -49,11 +49,7 @@ class Round(models.Model):
         
         
 class TournamentMatch(BaseMatch):
-    class Slot(models.TextChoices):
-        LEFT = 'left', 'Lending'
-        RIGHT = 'right', 'Right'
-    
     round = models.ForeignKey(Round, on_delete=models.CASCADE)
     match_number = models.PositiveIntegerField()
     parent_match = models.ForeignKey('self', null=True, blank=True, on_delete=models.CASCADE)
-    parent_match_player_slot = models.CharField(max_length=5, choices=Slot.choices, null=True, blank=True)
+    parent_match_player_team = models.CharField(max_length=5, choices=BaseMatch.Team.choices, null=True, blank=True)
