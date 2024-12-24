@@ -10,6 +10,7 @@ class BaseMatch(models.Model):
         LEFT = 'left', 'Lending'
         RIGHT = 'right', 'Right'
     
+    unique_id = models.CharField(max_length=50, unique=True, null=True, blank=True)
     left_player = models.IntegerField(null=True)
     right_player = models.IntegerField(null=True)
     left_player_score = models.IntegerField(default=0)

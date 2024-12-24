@@ -9,7 +9,8 @@ if TYPE_CHECKING:
     
 
 class Arena:
-    def __init__(self):
+    def __init__(self, unique_id):
+        self.unique_id = unique_id
         self.width = 138
         self.height = 76
         self.left_player = None
@@ -100,7 +101,8 @@ class Arena:
         winner = self.check_winner()
         if winner:
             arena_result = {
-                'winner': winner.user_id,
+                "unique_id": self.unique_id,
+                "winner": winner.user_id,
                 "left_player_score": self.left_player.score,
                 "right_player_score": self.right_player.score,
                 "left_player": self.left_player.user_id,
