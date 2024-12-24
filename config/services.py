@@ -2,8 +2,6 @@ import aiohttp
 from config.settings import USER_SERVICE_URL
 from channels.layers import get_channel_layer
 from .redis_utils import get_channel_name
-from .custom_validation_error import CustomValidationError
-from .error_type import ErrorType
 
 class UserService:
     @staticmethod
@@ -16,6 +14,31 @@ class UserService:
                 if response.status == 200:
                     return await response.json()
                 return None
+            
+    @staticmethod
+    async def get_user_email(user_id, token):
+        user = await UserService.get_user(user_id, token)
+        if user:
+            return user.get('email')
+    
+    @staticmethod
+    async def send_email(email, subject, message, token):
+        request_url = f'{USER_SERVICE_URL}send-email/'
+        headers = {
+            'Authorization': f'Bearer {token}',
+            'Content-Type': 'application/json'
+        }
+        data = {
+            'email': email,
+            'subject': subject,
+            'message': message
+        }
+        
+        async with aiohttp.ClientSession() as session:
+            async with session.post(request_url, headers=headers, json=data, timeout=10) as response:
+                if response.status == 200:
+                    return True
+                return False
     
     @staticmethod    
     async def get_user_name(user_id, token):
@@ -33,7 +56,6 @@ class UserService:
         channel_layer = get_channel_layer()
         channel_name = await get_channel_name(user_id)
         if not channel_name:
-            # raise CustomValidationError(ErrorType.NOT_ONLINE)
             return False
         
         await channel_layer.send(channel_name, message)

@@ -1,5 +1,6 @@
 from rest_framework import serializers
-from .models import Tournament
+from .models import Tournament, TournamentMatch
+from arena.serializers import BaseMatchSerializer
 
 class TournamentSerializer(serializers.ModelSerializer):
     current_participants = serializers.ReadOnlyField()
@@ -29,3 +30,13 @@ class TournamentSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         validated_data['creator'] = self.context['request'].user_id
         return super().create(validated_data)
+    
+
+class TournamentMatchSerializer(BaseMatchSerializer):
+    class Meta(BaseMatchSerializer.Meta):
+        model = TournamentMatch
+        fields = BaseMatchSerializer.Meta.fields + [
+            'tournament',
+            'round',
+            'match_number'
+        ]

@@ -1,4 +1,5 @@
 from django.db import models
+from arena.models import BaseMatch
 import math
 
 class Tournament(models.Model):
@@ -42,17 +43,7 @@ class TournamentParticipant(models.Model):
         unique_together = ('tournament', 'user_id')
         
         
-class Match(models.Model):
-    class State(models.TextChoices):
-        PENDING = 'pending', 'Pending'
-        READY = 'ready', 'Ready to Start'
-        STARTED = 'started', 'Started'
-        FINISHED = 'finished', 'Finished'
-    
-    tournament = models.ForeignKey(Tournament, on_delete=models.CASCADE)
-    round = models.IntegerField()
-    match_number = models.IntegerField()
-    left_player = models.IntegerField(null=True)
-    right_player = models.IntegerField(null=True)
-    winner = models.IntegerField(null=True)
-    state = models.CharField(max_length=20, choices=State.choices, default=State.PENDING)
+class TournamentMatch(BaseMatch):
+    tournament = models.ForeignKey(Tournament, on_delete=models.CASCADE, null=True, blank=True)
+    round = models.IntegerField(null=True, blank=True)
+    match_number = models.IntegerField(null=True, blank=True)
