@@ -21,7 +21,7 @@ from .services import (
 from .models import Reception
 from config.close_codes import CloseCode
 from urllib.parse import parse_qs
-from arena.services import arena_websocket_url
+from arena.services import ArenaService
 
 
 class ReceptionConsumer(AsyncWebsocketConsumer):
@@ -115,7 +115,7 @@ class ReceptionConsumer(AsyncWebsocketConsumer):
         await set_redis_arena_participants(self.reception_id, self.user_id)
         await self.send(text_data=json.dumps({
             'type': 'move',
-            'url': arena_websocket_url(self.reception_id)
+            'url': ArenaService.arena_websocket_url(self.reception_id)
         }))
         
         await self.channel_layer.group_discard(

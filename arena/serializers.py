@@ -6,8 +6,8 @@ class BaseMatchSerializer(serializers.ModelSerializer):
         fields = [
             'left_player',
             'right_player',
-            'left_score',
-            'right_score',
+            'left_player_score',
+            'right_player_score',
             'winner',
             'state',
             'created_at',

@@ -12,8 +12,8 @@ class Arena:
     def __init__(self):
         self.width = 138
         self.height = 76
-        self.lp = None
-        self.rp = None
+        self.left_player = None
+        self.right_player = None
         self.ball = Ball(self)
         self.current_round = 1
         self.max_score = 3
@@ -30,21 +30,21 @@ class Arena:
             self.broadcast_func = broadcast_func
             
     def get_remaining_team(self):
-        if not self.lp:
+        if not self.left_player:
             return BaseMatch.Team.LEFT
-        elif not self.rp:
+        elif not self.right_player:
             return BaseMatch.Team.RIGHT
     
     async def add_player(self, player: "Player"):
         team = player.team
-        if not self.lp and team == BaseMatch.Team.LEFT:
-            self.lp = player
-        elif not self.rp and team == BaseMatch.Team.RIGHT:
-            self.rp = player
+        if not self.left_player and team == BaseMatch.Team.LEFT:
+            self.left_player = player
+        elif not self.right_player and team == BaseMatch.Team.RIGHT:
+            self.right_player = player
         else:
             return
         
-        if self.lp and self.rp:
+        if self.left_player and self.right_player:
             await self.play()
         else:
             await self.broadcast_func('waiting', 'Waiting for other player.')
@@ -52,10 +52,10 @@ class Arena:
         return player.team
         
     async def remove_player(self, player: "Player"):
-        if player is self.lp:
-            self.lp = None
-        elif player is self.rp:
-            self.rp = None
+        if player is self.left_player:
+            self.left_player = None
+        elif player is self.right_player:
+            self.right_player = None
             
     def is_started(self):
         return self._loop_task is not None
@@ -70,7 +70,7 @@ class Arena:
         
         while not self.is_finished:
             self.ball.update_position()
-            self.ball.handle_collision(self.lp.bar, self.rp.bar)
+            self.ball.handle_collision(self.left_player.bar, self.right_player.bar)
 
             round_result = self.check_round_end()
             if round_result:
@@ -101,18 +101,18 @@ class Arena:
         if winner:
             arena_result = {
                 'winner': winner.user_id,
-                "lp_score": self.lp.score,
-                "rp_score": self.rp.score,
-                "lp_user_id": self.lp.user_id,
-                "rp_user_id": self.rp.user_id,
+                "left_player_score": self.left_player.score,
+                "right_player_score": self.right_player.score,
+                "left_player": self.left_player.user_id,
+                "right_player": self.right_player.user_id,
                 }
             await broadcast_event(self.group_name, 'arena.end', arena_result)
         
     def get_state(self):
         return {
             "ball": {"x": self.ball.x, "y": self.ball.y},
-            "lp_bar": self.lp.bar.y,
-            "rp_bar": self.rp.bar.y,
+            "left_player_bar": self.left_player.bar.y,
+            "right_player_bar": self.right_player.bar.y,
         }
     
     async def forfeit(self, exit_user_id):
@@ -121,47 +121,47 @@ class Arena:
             try:
                 await self._loop_task
             except asyncio.CancelledError:
-                if exit_user_id == self.lp.user_id:
-                    self.lp.score = 0
-                    self.rp.score = self.max_score
-                elif exit_user_id == self.rp.user_id:
-                    self.rp.score = 0
-                    self.lp.score = self.max_score
+                if exit_user_id == self.left_player.user_id:
+                    self.left_player.score = 0
+                    self.right_player.score = self.max_score
+                elif exit_user_id == self.right_player.user_id:
+                    self.right_player.score = 0
+                    self.left_player.score = self.max_score
                 await self.end_game()
         
     def get_oppenent(self, user_id):
-        if user_id == self.lp.user_id:
-            return self.rp.user_id
-        elif user_id == self.rp.user_id:
-            return self.lp.user_id
+        if user_id == self.left_player.user_id:
+            return self.right_player.user_id
+        elif user_id == self.right_player.user_id:
+            return self.left_player.user_id
         return None
         
     def get_scores(self):
         return {
-            "lp_score": self.lp.score,
-            "rp_score": self.rp.score,
+            "left_player_score": self.left_player.score,
+            "right_player_score": self.right_player.score,
         }
     
     def reset_round(self):
         self.current_round += 1
         self.ball.reset()
-        self.lp.bar.reset()
-        self.rp.bar.reset()
+        self.left_player.bar.reset()
+        self.right_player.bar.reset()
         
     def check_winner(self):
-        if self.lp.score >= self.max_score:
+        if self.left_player.score >= self.max_score:
             self.is_finished = True
-            return self.lp
-        if self.rp.score >= self.max_score:
+            return self.left_player
+        if self.right_player.score >= self.max_score:
             self.is_finished = True
-            return self.rp
+            return self.right_player
         return None
 
     def check_round_end(self):
         result = self.ball.check_boundary_collision()
         if result == BaseMatch.Team.LEFT:
-            self.rp.increment_score()
+            self.right_player.increment_score()
         elif result == BaseMatch.Team.RIGHT:
-            self.lp.increment_score()
+            self.left_player.increment_score()
         return result
     

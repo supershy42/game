@@ -104,8 +104,8 @@ class TournamentService:
         
     @staticmethod
     def save_match_result(match:TournamentMatch, result):
-        match.left_score = result['lp_score']
-        match.right_score = result['rp_score']
+        match.left_player_score = result['left_player_score']
+        match.right_player_score = result['right_player_score']
         match.winner = result['winner']
         match.state = TournamentMatch.State.FINISHED
         match.save()
