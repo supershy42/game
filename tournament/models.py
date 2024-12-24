@@ -17,19 +17,12 @@ class Tournament(models.Model):
     state = models.CharField(max_length=20, choices=State.choices, default=State.WAITING)
     
     @property
-    def current_participants(self):
-        return self.tournamentparticipant_set.count()
-    
-    @property
     def total_rounds(self):
         return int(math.log2(self.max_participants))
     
     @classmethod
     def is_valid_participants(cls, value):
         return value in cls.VALID_PARTICIPANTS
-    
-    def is_full(self):
-        return self.current_participants == self.max_participants
     
     
 class TournamentParticipant(models.Model):
