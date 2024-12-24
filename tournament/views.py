@@ -1,10 +1,9 @@
 from rest_framework.views import APIView
-from .serializers import TournamentSerializer
+from .serializers import TournamentSerializer, TournamentMatchSerializer
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework import generics
-from .models import Tournament
-from asgiref.sync import async_to_sync
+from .models import Tournament, TournamentMatch
 from .services import TournamentService
 from config.custom_validation_error import CustomValidationError
 from config.response_builder import response_error, response_ok
@@ -46,9 +45,9 @@ class TournamentJoinView(APIView):
 
 
 class TournamentBracketView(APIView):
-    def get(self, tournament_id):
-        try:
-            TournamentService.update_bracket(tournament_id)
-        except CustomValidationError as e:
-            return response_error(e)
-        return response_ok()
+    def get(self, request, tournament_id):
+        matches = TournamentMatch.objects.filter(round__tournament_id=tournament_id)\
+            .order_by('match_number')
+            
+        serializer = TournamentMatchSerializer(matches, many=True)
+        return Response(serializer.data)

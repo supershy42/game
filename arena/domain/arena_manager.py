@@ -1,4 +1,5 @@
 from .arena import Arena
+from arena.services import ArenaService
 
 class ArenaManager:
     _arenas = {}
@@ -6,7 +7,7 @@ class ArenaManager:
     @classmethod
     def get_arena(cls, arena_id):
         if arena_id not in cls._arenas:
-            cls._arenas[arena_id] = Arena()
+            cls._arenas[arena_id] = Arena(unique_id=ArenaService.generate_unique_id())
         return cls._arenas[arena_id]
     
     @classmethod
