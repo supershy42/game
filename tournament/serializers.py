@@ -2,7 +2,7 @@ from rest_framework import serializers
 from .models import Tournament
 
 class TournamentSerializer(serializers.ModelSerializer):
-    current_participants = serializers.SerializerMethodField()
+    current_participants = serializers.ReadOnlyField()
     total_rounds = serializers.ReadOnlyField()
     
     class Meta:
@@ -20,9 +20,6 @@ class TournamentSerializer(serializers.ModelSerializer):
         extra_kwargs = {
             'creator': {'read_only': True},
         }
-        
-    def get_current_participants(self, obj):
-        return obj.tournamentparticipant_set.count()
     
     def validate_max_participants(self, value):
         if not Tournament.is_valid_participants(value):

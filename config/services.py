@@ -33,6 +33,8 @@ class UserService:
         channel_layer = get_channel_layer()
         channel_name = await get_channel_name(user_id)
         if not channel_name:
-            raise CustomValidationError(ErrorType.NOT_ONLINE)
+            # raise CustomValidationError(ErrorType.NOT_ONLINE)
+            return False
         
         await channel_layer.send(channel_name, message)
+        return True
