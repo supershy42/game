@@ -1,6 +1,6 @@
 from channels.generic.websocket import AsyncWebsocketConsumer
 import json
-from .redis_utils import (
+from config.redis_utils import (
     add_user_to_reception,
     remove_user_from_reception,
     update_user_state,
