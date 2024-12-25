@@ -9,6 +9,7 @@ from config.response_builder import response_error, response_ok
 from config.custom_validation_error import CustomValidationError
 from asgiref.sync import async_to_sync
 from config.services import UserService
+from config.redis_services import ReceptionRedisService
 
 class CreateReceptionView(APIView):
     def post(self, request):
@@ -37,10 +38,10 @@ class ReceptionJoinView(APIView):
         password = serializer.validated_data.get('password')
         try:
             async_to_sync(ReceptionService.validate_join)(reception_id, user_id, password)
-            message = {
+            async_to_sync(ReceptionRedisService.add_allowed_user)(reception_id, user_id)
+            return response_ok(message={
                 "url": ReceptionService.get_websocket_url(reception_id),
-            }
-            return response_ok(message=message)
+            })
         except CustomValidationError as e:
             return response_error(e)
 

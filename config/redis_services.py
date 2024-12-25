@@ -14,6 +14,10 @@ class ReceptionRedisService:
     @staticmethod
     def get_invitation_key(reception_id, user_id):
         return f'invitation:{reception_id}:{user_id}'
+    
+    @staticmethod
+    def get_allowed_users_key(reception_id):
+        return f"reception:{reception_id}:allowed_users"
 
     @staticmethod
     def get_playing_reception_key():
@@ -79,15 +83,21 @@ class ReceptionRedisService:
     async def set_invitation(reception_id, user_id, ttl=3000): # 일단 300초
         invitation_key = ReceptionRedisService.get_invitation_key(reception_id, user_id)
         await redis_client.setex(invitation_key, ttl, 1)
-
-    @staticmethod    
-    async def add_blacklist(token, ttl=3000):
-        await redis_client.sadd("blacklist", token)
-        await redis_client.expire("blacklist", ttl)
-
-    @staticmethod    
-    async def is_blacklisted(token):
-        return await redis_client.sismember("blacklist", token)
+        
+    @staticmethod
+    async def add_allowed_user(reception_id, user_id):
+        key = ReceptionRedisService.get_allowed_users_key(reception_id)
+        await redis_client.sadd(key, user_id)
+        
+    @staticmethod
+    async def is_allowed_user(reception_id, user_id):
+        key = ReceptionRedisService.get_allowed_users_key(reception_id)
+        return await redis_client.sismember(key, user_id)
+        
+    @staticmethod
+    async def remove_allowed_user(reception_id, user_id):
+        key = ReceptionRedisService.get_allowed_users_key(reception_id)
+        await redis_client.srem(key, user_id)
 
     @staticmethod
     async def set_playing(reception_id):

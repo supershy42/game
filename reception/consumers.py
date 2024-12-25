@@ -4,7 +4,6 @@ from config.redis_services import ReceptionRedisService, ArenaRedisService
 from .services import ReceptionService
 from .models import Reception
 from config.close_codes import CloseCode
-from urllib.parse import parse_qs
 from arena.services import ArenaService
 
 
@@ -26,7 +25,6 @@ class ReceptionConsumer(AsyncWebsocketConsumer):
             self.channel_name
         )
         
-        await ReceptionRedisService.add_blacklist(self.token)
         await ReceptionRedisService.add_user(self.reception_id, self.user_id)
         self.is_added = True
         
@@ -35,10 +33,8 @@ class ReceptionConsumer(AsyncWebsocketConsumer):
     async def validate_access(self):
         if not await ReceptionService.exists(self.reception_id):
             return False
-
-        if not await ReceptionService.validate_user_connect(self.user_id):
+        if not await ReceptionRedisService.is_allowed_user(self.reception_id, self.user_id):
             return False
-        
         return True
         
     async def disconnect(self, close_code):
@@ -46,10 +42,13 @@ class ReceptionConsumer(AsyncWebsocketConsumer):
             self.reception_group_name,
             self.channel_name
         )
+        
+        await ReceptionRedisService.remove_allowed_user(self.reception_id, self.user_id)
             
         if self.is_added:
             await ReceptionRedisService.remove_user(self.reception_id, self.user_id)
-            if not await ReceptionRedisService.is_playing(self.reception_id) and await ReceptionRedisService.should_remove(self.reception_id):
+            if not await ReceptionRedisService.is_playing(self.reception_id) \
+                and await ReceptionRedisService.should_remove(self.reception_id):
                 await Reception.objects.filter(id=self.reception_id).adelete()
             else:
                 await self.broadcastUserUpdate()
@@ -58,20 +57,17 @@ class ReceptionConsumer(AsyncWebsocketConsumer):
         try:
             data = json.loads(text_data)
         except json.JSONDecodeError:
-            await self.send(json.dumps({'error': 'json decode error'}))
-            return
+            return await self.send_error('json decode error')
         message_type = data.get('type')
         
         if message_type == 'ready':
             await self.handle_ready(data)
         else:
-            await self.send(json.dumps({'error': 'unknown message type'}))
-            return
+            return await self.send_error('unknown message type')
             
     async def handle_ready(self, data):
         if 'is_ready' not in data:
-            await self.send(json.dumps({'error': 'is_ready field is required'}))
-            return
+            return await self.send_error('is_ready field is required')
         
         is_ready = data['is_ready']
         
@@ -91,10 +87,10 @@ class ReceptionConsumer(AsyncWebsocketConsumer):
             
     async def move_to_arena(self, event):
         await ArenaRedisService.set_participants(self.reception_id, self.user_id)
-        await self.send(text_data=json.dumps({
+        await self.send_json({
             'type': 'move',
             'url': ArenaService.arena_websocket_url(self.reception_id)
-        }))
+        })
         
         await self.channel_layer.group_discard(
             self.reception_group_name,
@@ -116,7 +112,13 @@ class ReceptionConsumer(AsyncWebsocketConsumer):
         )
 
     async def send_to_client(self, event):
-        await self.send(text_data=json.dumps({
+        await self.send_json({
             'type': event['message_type'],
             'message': event['message']
-        }))
+        })
+        
+    async def send_error(self, error_message):
+        await self.send_json(error_message)
+        
+    async def send_json(self, message):
+        await self.send(text_data=json.dumps(message))

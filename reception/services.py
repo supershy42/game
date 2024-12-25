@@ -31,6 +31,8 @@ class ReceptionService:
             reception = await Reception.objects.aget(id=reception_id)
         except:
             raise CustomValidationError(ErrorType.RECEPTION_NOT_FOUND)
+        if await ReceptionRedisService.get_current_reception(user_id):
+            raise CustomValidationError(ErrorType.ALREADY_ASSIGNED)
         if await ReceptionService.get_participants_count(reception_id) >= reception.max_players:
             raise CustomValidationError(ErrorType.RECEPTION_FULL)
 
@@ -44,7 +46,6 @@ class ReceptionService:
         reception_id = await ReceptionRedisService.get_current_reception(from_user_id)
         if not reception_id:
             raise CustomValidationError(ErrorType.NO_RECEPTION)
-        # 친구 상태 검증 해야 되나?
 
         await UserService.send_notification(to_user_id, {
             "type": "reception.invitation",

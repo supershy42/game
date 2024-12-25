@@ -17,6 +17,7 @@ class ErrorType(Enum):
     NOT_ONLINE = (status.HTTP_403_FORBIDDEN, "Your friend is not online.")
     TOURNAMENT_FULL = (status.HTTP_403_FORBIDDEN, "The tournament is full.")
     TOURNAMENT_NOT_FULL = (status.HTTP_403_FORBIDDEN, "Tournament is not full.")
+    ALREADY_ASSIGNED = (status.HTTP_403_FORBIDDEN, "User already assigned other room.")
     ALREADY_EXISTS = (status.HTTP_403_FORBIDDEN, "User already joined tournament.")
     TOURNAMENT_NOT_WAITING = (status.HTTP_403_FORBIDDEN, "Tournament is not in waiting state.")
     PERMISSION_DENIED = (status.HTTP_403_FORBIDDEN, "You do not have permission to start this tournament.")
