@@ -2,45 +2,45 @@ from unittest.mock import patch, AsyncMock
 from rest_framework.test import APIClient, APITestCase
 from rest_framework import status
 from reception.models import Reception
-from reception.services import validate_join_reception, invite
+from reception.services import ReceptionService
 from config.custom_validation_error import CustomValidationError
 from config.error_type import ErrorType
 from unittest import IsolatedAsyncioTestCase
 
 # 서비스 함수 테스트
 class TestServiceFunctions(IsolatedAsyncioTestCase):
-    async def test_validate_join_reception_valid(self):
+    async def test_validate_join_valid(self):
         reception = await Reception.objects.acreate(name="Test Room", max_players=2)
 
         with patch("reception.services.get_participants_count", return_value=1), \
              patch("reception.services.is_invited", return_value=True):
             try:
-                await validate_join_reception(reception.id, user_id=1, password=None)
+                await ReceptionService.validate_join(reception.id, user_id=1, password=None)
             except CustomValidationError:
-                self.fail("validate_join_reception raised CustomValidationError unexpectedly")
+                self.fail("validate_join raised CustomValidationError unexpectedly")
 
-    async def test_validate_join_reception_invalid_password(self):
+    async def test_validate_join_invalid_password(self):
         reception = await Reception.objects.acreate(name="Test Room", max_players=2, password="secret")
 
         with patch("reception.services.get_participants_count", return_value=1), \
              patch("reception.services.is_invited", return_value=False):
             with self.assertRaises(CustomValidationError) as exc:
-                await validate_join_reception(reception.id, user_id=1, password="wrongpassword")
+                await ReceptionService.validate_join(reception.id, user_id=1, password="wrongpassword")
             self.assertEqual(exc.exception.error_type, ErrorType.INVALID_PASSWORD)
 
     async def test_invite_valid(self):
         with patch("reception.services.get_current_reception", return_value=1), \
-             patch("reception.services.set_redis_invitation"), \
+             patch("reception.services.set_invitation"), \
              patch("config.services.UserService.send_notification", return_value=AsyncMock()):
             try:
-                await invite(from_user_id=1, to_user_id=2, from_user_name="TestUser")
+                await ReceptionService.invite(from_user_id=1, to_user_id=2, from_user_name="TestUser")
             except CustomValidationError:
                 self.fail("invite raised CustomValidationError unexpectedly")
 
     async def test_invite_no_reception(self):
         with patch("reception.services.get_current_reception", return_value=None):
             with self.assertRaises(CustomValidationError) as exc:
-                await invite(from_user_id=1, to_user_id=2, from_user_name="TestUser")
+                await ReceptionService.invite(from_user_id=1, to_user_id=2, from_user_name="TestUser")
             self.assertEqual(exc.exception.error_type, ErrorType.NO_RECEPTION)
 
 # 전체 기능 통합 테스트
@@ -53,8 +53,7 @@ class TestReceptionViews(APITestCase):
         self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.user_token}")
 
     def test_join_reception_success(self):
-        with patch("reception.views.validate_join_reception", return_value=None), \
-             patch("reception.views.create_ws_token", return_value="ws_token"), \
+        with patch("reception.views.validate_join", return_value=None), \
              patch("config.redis_utils.redis_client", autospec=True) as mock_redis_client:
 
             mock_redis_client.sismember = AsyncMock(return_value=0)
@@ -68,7 +67,7 @@ class TestReceptionViews(APITestCase):
             self.assertEqual(response.data["token"], "ws_token")
 
     def test_join_reception_invalid_password(self):
-        with patch("reception.views.validate_join_reception", side_effect=CustomValidationError(ErrorType.INVALID_PASSWORD)), \
+        with patch("reception.views.validate_join", side_effect=CustomValidationError(ErrorType.INVALID_PASSWORD)), \
              patch("config.redis_utils.redis_client", autospec=True) as mock_redis_client:
 
             mock_redis_client.sismember = AsyncMock(return_value=0)
@@ -107,11 +106,10 @@ class TestReceptionViews(APITestCase):
             self.assertEqual(response.data["message"], ErrorType.NO_RECEPTION.message)
 
     def test_invited_user_join_without_password(self):
-        with patch("reception.views.validate_join_reception", return_value=None), \
+        with patch("reception.views.validate_join", return_value=None), \
              patch("reception.services.is_invited", return_value=True), \
              patch("reception.views.UserService.get_user_name", return_value="MockedUserName"), \
              patch("reception.services.UserService.send_notification", return_value=None), \
-             patch("reception.views.create_ws_token", return_value="ws_token"), \
              patch("reception.serializers.ReceptionInvitationSerializer.validate_to_user_id", return_value=True), \
              patch("config.redis_utils.redis_client", autospec=True) as mock_redis_client:
 
