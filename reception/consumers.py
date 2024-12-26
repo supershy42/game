@@ -25,10 +25,12 @@ class ReceptionConsumer(AsyncWebsocketConsumer):
             self.channel_name
         )
         
-        await ReceptionRedisService.add_user(self.reception_id, self.user_id)
-        self.is_added = True
+        self.is_added = await ReceptionRedisService.add_user(self.reception_id, self.user_id, self.scope['token'])
+        if not self.is_added:
+            await self.loopback_user_update()
+            return
         
-        await self.broadcastUserUpdate()
+        await self.broadcast_user_update()
     
     async def validate_access(self):
         if not await ReceptionService.exists(self.reception_id):
@@ -42,16 +44,15 @@ class ReceptionConsumer(AsyncWebsocketConsumer):
             self.reception_group_name,
             self.channel_name
         )
-        
-        await ReceptionRedisService.remove_allowed_user(self.reception_id, self.user_id)
             
         if self.is_added:
+            await ReceptionRedisService.remove_allowed_user(self.reception_id, self.user_id)
             await ReceptionRedisService.remove_user(self.reception_id, self.user_id)
             if not await ReceptionRedisService.is_playing(self.reception_id) \
                 and await ReceptionRedisService.should_remove(self.reception_id):
                 await Reception.objects.filter(id=self.reception_id).adelete()
             else:
-                await self.broadcastUserUpdate()
+                await self.broadcast_user_update()
         
     async def receive(self, text_data):
         try:
@@ -66,14 +67,9 @@ class ReceptionConsumer(AsyncWebsocketConsumer):
             return await self.send_error('unknown message type')
             
     async def handle_ready(self, data):
-        if 'is_ready' not in data:
-            return await self.send_error('is_ready field is required')
+        await ReceptionRedisService.toggle_ready(self.reception_id, self.user_id)
         
-        is_ready = data['is_ready']
-        
-        await ReceptionRedisService.update_user_state(self.reception_id, self.user_id, is_ready)
-        
-        await self.broadcastUserUpdate()
+        await self.broadcast_user_update()
         
         if await ReceptionRedisService.should_start(self.reception_id):
             await ReceptionRedisService.set_playing(self.reception_id)
@@ -97,9 +93,16 @@ class ReceptionConsumer(AsyncWebsocketConsumer):
             self.channel_name
         )
         
-    async def broadcastUserUpdate(self):
-        message = await ReceptionService.get_participants_detail(self.reception_id, self.scope['token'])
+    async def broadcast_user_update(self):
+        message = await ReceptionRedisService.get_participants(self.reception_id)
         await self.broadcast_message('participants', message)
+        
+    async def loopback_user_update(self):
+        message = await ReceptionRedisService.get_participants(self.reception_id)
+        await self.send_json({
+            'type': 'participants',
+            'message': message
+        })
         
     async def broadcast_message(self, message_type, message):
         await self.channel_layer.group_send(
