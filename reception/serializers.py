@@ -12,20 +12,19 @@ class ReceptionSerializer(serializers.ModelSerializer):
         max_length=20,
     )
     has_password = serializers.SerializerMethodField(read_only=True)
+    creator = serializers.IntegerField(read_only=True)
     
     class Meta:
         model = Reception
-        fields = ['id', 'name', 'password', 'has_password']
+        fields = ['id', 'creator', 'name', 'password', 'has_password']
         extra_kwargs = {
             'name': {'required': True},
         }
     
     def create(self, validated_data):
-        password = validated_data.pop('password', None)
-        reception = Reception(**validated_data)
-        reception.set_password(password)
-        reception.save()
-        return reception
+        request = self.context.get('request')
+        validated_data['creator'] = request.user_id
+        return super().create(validated_data)
     
     def get_has_password(self, obj):
         return obj.has_password

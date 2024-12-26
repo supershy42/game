@@ -13,7 +13,7 @@ from config.redis_services import ReceptionRedisService
 
 class CreateReceptionView(APIView):
     def post(self, request):
-        serializer = ReceptionSerializer(data=request.data)
+        serializer = ReceptionSerializer(data=request.data, context={'request': request})
         if serializer.is_valid():
             reception = serializer.save()
             response_serializer = ReceptionSerializer(reception)
