@@ -39,9 +39,7 @@ class ReceptionJoinView(APIView):
         try:
             async_to_sync(ReceptionService.validate_join)(reception_id, user_id, password)
             async_to_sync(ReceptionRedisService.add_allowed_user)(reception_id, user_id)
-            return response_ok(message={
-                "url": ReceptionService.get_websocket_url(reception_id),
-            })
+            return response_ok()
         except CustomValidationError as e:
             return response_error(e)
 
