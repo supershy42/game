@@ -2,6 +2,9 @@ from pathlib import Path
 from decouple import config # ENV
 
 # ENV
+SECRET_KEY = config("SECRET_KEY")
+DEBUG = config("DEBUG", default=False, cast=bool)
+
 WS_SECRET_KEY = config("WS_SECRET_KEY")
 WS_ALGORITHM = config("WS_ALGORITHM")
 USER_SERVICE_URL = config("USER_SERVICE_URL")
@@ -14,11 +17,9 @@ REDIS_CAPACITY = config('REDIS_CAPACITY', cast=int)
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-(bln+taoyt4&=u!yrg&niiuzj$%s77=lc^c9!ay^6)d6yess4&'
+SECRET_KEY = SECRET_KEY
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = DEBUG
 
 ALLOWED_HOSTS = []
 
