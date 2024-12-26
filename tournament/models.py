@@ -50,7 +50,7 @@ class Round(models.Model):
         
 class TournamentMatch(BaseMatch):
     class Slot(models.TextChoices):
-        LEFT = 'left', 'Lending'
+        LEFT = 'left', 'Left'
         RIGHT = 'right', 'Right'
     
     round = models.ForeignKey(Round, on_delete=models.CASCADE)
