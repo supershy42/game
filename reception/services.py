@@ -19,19 +19,13 @@ class ReceptionService:
         return len(await ReceptionRedisService.get_participants(reception_id))
     
     @staticmethod
-    async def get_participants_detail(reception_id, token):
-        participants = await ReceptionRedisService.get_participants(reception_id)
-        tasks = {k: UserService.get_user(k, token) for k in participants.keys()}
-        users = await asyncio.gather(*tasks.values())
-        return {user.get('nickname'): participants[k] for k, user in zip(tasks.keys(), users)}
-    
-    @staticmethod
     async def validate_join(reception_id, user_id, password):
         try:
             reception = await Reception.objects.aget(id=reception_id)
         except:
             raise CustomValidationError(ErrorType.RECEPTION_NOT_FOUND)
-        if await ReceptionRedisService.get_current_reception(user_id):
+        current_reception_id = await ReceptionRedisService.get_current_reception(user_id)
+        if current_reception_id and str(current_reception_id) != str(reception_id):
             raise CustomValidationError(ErrorType.ALREADY_ASSIGNED)
         if await ReceptionService.get_participants_count(reception_id) >= reception.max_players:
             raise CustomValidationError(ErrorType.RECEPTION_FULL)
