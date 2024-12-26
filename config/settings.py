@@ -1,4 +1,15 @@
 from pathlib import Path
+from decouple import config # ENV
+
+# ENV
+WS_SECRET_KEY = config("WS_SECRET_KEY")
+WS_ALGORITHM = config("WS_ALGORITHM")
+USER_SERVICE_URL = config("USER_SERVICE_URL")
+
+REDIS_HOST = config('REDIS_HOST')
+REDIS_PORT = config('REDIS_PORT', cast=int)
+REDIS_DB = config('REDIS_DB', cast=int)
+REDIS_CAPACITY = config('REDIS_CAPACITY', cast=int)
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -120,8 +131,8 @@ CHANNEL_LAYERS = {
     'default': {
         'BACKEND': 'channels_redis.core.RedisChannelLayer',
         'CONFIG': {
-            "hosts": [('127.0.0.1', 6379)],
-            "capacity":500, # 메시지 큐 용량
+            "hosts": [(REDIS_HOST, REDIS_PORT)],
+            "capacity": REDIS_CAPACITY, # 메시지 큐 용량
         },
     },
 }
@@ -131,10 +142,3 @@ REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 10,  # 기본 페이지 크기 설정
 }
-
-# ENV
-from decouple import config
-
-WS_SECRET_KEY = config("WS_SECRET_KEY")
-WS_ALGORITHM = config("WS_ALGORITHM")
-USER_SERVICE_URL = config("USER_SERVICE_URL")
