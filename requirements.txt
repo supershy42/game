@@ -36,6 +36,7 @@ PyJWT==2.10.1
 pyOpenSSL==24.3.0
 pytest==8.3.4
 pytest-asyncio==0.24.0
+python-decouple==3.8
 PyYAML==6.0.2
 redis==5.2.0
 referencing==0.35.1
