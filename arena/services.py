@@ -8,7 +8,7 @@ from asgiref.sync import sync_to_async
 class ArenaService:
     @staticmethod
     def get_arena_group_name(arena_id):
-        return f"arena_{arena_id}"
+        return f"arena_group_{arena_id}"
 
     @staticmethod
     def arena_websocket_url(arena_id):

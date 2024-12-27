@@ -1,13 +1,27 @@
 from pathlib import Path
+from decouple import config # ENV
+
+# ENV
+SECRET_KEY = config("SECRET_KEY")
+DEBUG = config("DEBUG", default=False, cast=bool)
+
+WS_SECRET_KEY = config("WS_SECRET_KEY")
+WS_ALGORITHM = config("WS_ALGORITHM")
+USER_SERVICE_URL = config("USER_SERVICE_URL")
+
+DATABASE_ENGINE = config('DATABASE_ENGINE', default='sqlite3')
+
+REDIS_HOST = config('REDIS_HOST')
+REDIS_PORT = config('REDIS_PORT', cast=int)
+REDIS_DB = config('REDIS_DB', cast=int)
+REDIS_CAPACITY = config('REDIS_CAPACITY', cast=int)
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-(bln+taoyt4&=u!yrg&niiuzj$%s77=lc^c9!ay^6)d6yess4&'
+SECRET_KEY = SECRET_KEY
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = DEBUG
 
 ALLOWED_HOSTS = []
 
@@ -64,12 +78,26 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+if DATABASE_ENGINE == 'sqlite3':
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3'
+        }
     }
-}
+elif DATABASE_ENGINE == 'postgresql':
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': config('POSTGRES_DB', default=''),
+            'USER': config('POSTGRES_USER', default=''),
+            'PASSWORD': config('POSTGRES_PASSWORD', default=''),
+            'HOST': config('POSTGRES_HOST', default='localhost'),
+            'PORT': config('POSTGRES_PORT', default='5432'),
+        }
+    }
+else:
+    raise ValueError("Unsupported DATABASE_ENGINE value")
 
 
 # Password validation
@@ -120,8 +148,8 @@ CHANNEL_LAYERS = {
     'default': {
         'BACKEND': 'channels_redis.core.RedisChannelLayer',
         'CONFIG': {
-            "hosts": [('127.0.0.1', 6379)],
-            "capacity":500, # 메시지 큐 용량
+            "hosts": [(REDIS_HOST, REDIS_PORT)],
+            "capacity": REDIS_CAPACITY, # 메시지 큐 용량
         },
     },
 }
@@ -131,10 +159,3 @@ REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 10,  # 기본 페이지 크기 설정
 }
-
-# ENV
-from decouple import config
-
-WS_SECRET_KEY = config("WS_SECRET_KEY")
-WS_ALGORITHM = config("WS_ALGORITHM")
-USER_SERVICE_URL = config("USER_SERVICE_URL")

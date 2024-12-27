@@ -19,6 +19,6 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='tournamentmatch',
             name='parent_match_player_slot',
-            field=models.CharField(blank=True, choices=[('left', 'Lending'), ('right', 'Right')], max_length=5, null=True),
+            field=models.CharField(blank=True, choices=[('left', 'Left'), ('right', 'Right')], max_length=5, null=True),
         ),
     ]
