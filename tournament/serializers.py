@@ -42,5 +42,5 @@ class TournamentMatchSerializer(BaseMatchSerializer):
             'round_number',
             'match_number',
             'parent_match',
-            'parent_match_player_slot'
+            'parent_match_player_team'
         ] + BaseMatchSerializer.Meta.fields
