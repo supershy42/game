@@ -7,7 +7,7 @@ class BaseMatch(models.Model):
         FINISHED = 'finished', 'Finished'
         
     class Team(models.TextChoices):
-        LEFT = 'left', 'Lending'
+        LEFT = 'left', 'Left'
         RIGHT = 'right', 'Right'
     
     left_player = models.IntegerField(null=True)

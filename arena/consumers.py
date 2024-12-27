@@ -22,8 +22,8 @@ class ArenaConsumer(AsyncWebsocketConsumer):
         else:
             self.tournament_id = kwargs['tournament_id']
             self.match_number = kwargs['match_number']
-            self.arena_id = f"tournament{self.tournament_id}_match{self.match_number}"
-            self.arena_group_name = f"group_{self.arena_id}"
+            self.arena_id = TournamentService.get_arena_id(self.tournament_id, self.match_number)
+            self.arena_group_name = TournamentService.get_group_name(self.arena_id)
             self.type = ArenaType.TOURNAMENT
 
         self.user_id = self.scope.get('user_id')

@@ -12,6 +12,14 @@ class TournamentService:
         return f"ws/tournament/{tournament_id}/"
     
     @staticmethod
+    def get_group_name(tournament_id):
+        return f"tournament_group_{tournament_id}"
+    
+    @staticmethod
+    def get_arena_id(tournament_id, match_number):
+        return f"tournament{tournament_id}_match{match_number}"
+    
+    @staticmethod
     async def is_user_in_match(tournament_id, match_number, user_id):
         team = await TournamentService.get_user_team(tournament_id, match_number, user_id)
         return await TournamentService.get_user_team(tournament_id, match_number, user_id) is not None
