@@ -6,30 +6,28 @@ from datetime import datetime
 class BaseMatchDTO:
     def __init__(self, match: BaseMatch, token):
         self.id = getattr(match, 'id', None)
-        self.unique_id = match.unique_id
         self.left_player = self._get_user(match.left_player, token)
         self.right_player = self._get_user(match.right_player, token)
         self.left_player_score = match.left_player_score
         self.right_player_score = match.right_player_score
         self.winner = self._get_user(match.winner, token)
-        self.state = match.state
         self.created_at = self._format_datetime(match.created_at)
         
     def to_dict(self):
         return {
             "id": self.id,
-            "unique_id": self.unique_id,
             "left_player": self.left_player,
             "right_player": self.right_player,
             "left_player_score": self.left_player_score,
             "right_player_score": self.right_player_score,
             "winner": self.winner,
-            "state": self.state,
             "created_at": self.created_at,
         }
         
     def _get_user(self, user_id, token):
         user = async_to_sync(UserRedisService.get_or_fetch_user)(user_id, token)
+        if not user:
+            return
         if 'email' in user:
             user.pop('email')
         return user
@@ -40,6 +38,7 @@ class BaseMatchDTO:
         return dt
         
 class NormalMatchDTO(BaseMatchDTO):
+    
     def __init__(self, match):
         super().__init__(match)
 

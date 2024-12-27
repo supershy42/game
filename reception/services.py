@@ -41,13 +41,14 @@ class ReceptionService:
         if not reception_id:
             raise CustomValidationError(ErrorType.NO_RECEPTION)
 
-        await UserService.send_notification(to_user_id, {
+        result = await UserService.send_notification(to_user_id, {
             "type": "reception.invitation",
             "sender": from_user_name,
             "reception_id": reception_id
         })
 
-        await ReceptionRedisService.set_invitation(reception_id, to_user_id)
+        if result:
+            await ReceptionRedisService.set_invitation(reception_id, to_user_id)
         
     @staticmethod
     async def exists(reception_id):
