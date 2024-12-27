@@ -7,7 +7,7 @@ class BaseMatch(models.Model):
         FINISHED = 'finished', 'Finished'
         
     class Team(models.TextChoices):
-        LEFT = 'left', 'Lending'
+        LEFT = 'left', 'Left'
         RIGHT = 'right', 'Right'
     
     unique_id = models.CharField(max_length=50, unique=True, null=True, blank=True)
