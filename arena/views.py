@@ -5,6 +5,7 @@ from .serializers import NormalMatchSerializer
 from rest_framework import status
 from config.services import UserService
 from asgiref.sync import async_to_sync
+from .dto import BaseMatchDTO
 
 class MatchHistoryView(APIView):
     def get(self, request):
@@ -15,5 +16,6 @@ class MatchHistoryView(APIView):
                 status=status.HTTP_404_NOT_FOUND
             )
         matches = ArenaService.get_user_matches(user_id)
-        serializer = NormalMatchSerializer(matches, many=True)
+        match_dtos = [BaseMatchDTO(match, request.token).to_dict() for match in matches]
+        serializer = NormalMatchSerializer(match_dtos, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
