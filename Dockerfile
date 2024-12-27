@@ -16,5 +16,5 @@ RUN chmod +x /entrypoint.sh
 # 애플리케이션 코드 복사
 COPY ./config ./app
 
-# Django 서버 실행
-CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+# Start ASGI server with daphne
+CMD ["daphne", "-b", "0.0.0.0", "-p", "8000", "config.asgi:application"]
