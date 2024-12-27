@@ -5,6 +5,7 @@ from config.services import UserService
 from config.custom_validation_error import CustomValidationError
 from config.error_type import ErrorType
 from asgiref.sync import async_to_sync
+from django.db import IntegrityError, transaction
 
 class TournamentService:
     @staticmethod
@@ -89,10 +90,10 @@ class TournamentService:
     def handle_match_end(tournament_id, match_number, result):
         tournament = Tournament.objects.get(id=tournament_id)
         match = async_to_sync(TournamentService.get_match)(tournament_id, match_number)
-        if match.state == TournamentMatch.State.FINISHED:
-            return
         
-        TournamentService.save_match_result(match, result)
+        result = TournamentService.save_tournament_match(match, result)
+        if not result:
+            return
 
         current_round = match.round
         if current_round.round_number == tournament.total_rounds:
@@ -111,12 +112,18 @@ class TournamentService:
         TournamentService.handle_next_round_start(tournament, current_round)
         
     @staticmethod
-    def save_match_result(match:TournamentMatch, result):
-        match.left_score = result['lp_score']
-        match.right_score = result['rp_score']
-        match.winner = result['winner']
-        match.state = TournamentMatch.State.FINISHED
-        match.save()
+    def save_tournament_match(match:TournamentMatch, result):
+        try:
+            with transaction.atomic():
+                match.unique_id = result['unique_id']
+                match.left_player_score = result['left_player_score']
+                match.right_player_score = result['right_player_score']
+                match.winner = result['winner']
+                match.state = TournamentMatch.State.FINISHED
+                match.save()
+                return True
+        except IntegrityError:
+            return False
         
     @staticmethod
     def handle_tournament_ended(tournament:Tournament, winner):

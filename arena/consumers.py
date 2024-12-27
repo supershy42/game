@@ -1,5 +1,5 @@
 from channels.generic.websocket import AsyncWebsocketConsumer
-from .services import get_arena_group_name
+from .services import ArenaService
 from .domain.arena import Arena
 from .domain.player import Player
 import json
@@ -17,7 +17,7 @@ class ArenaConsumer(AsyncWebsocketConsumer):
         kwargs = self.scope["url_route"]["kwargs"]
         if "arena_id" in kwargs:
             self.arena_id = self.scope['url_route']['kwargs']['arena_id']
-            self.arena_group_name = get_arena_group_name(self.arena_id)
+            self.arena_group_name = ArenaService.get_arena_group_name(self.arena_id)
             self.type = ArenaType.NORMAL
         else:
             self.tournament_id = kwargs['tournament_id']
@@ -114,6 +114,7 @@ class ArenaConsumer(AsyncWebsocketConsumer):
             }
             await self.send_json(message)
         else:
+            await sync_to_async(ArenaService.save_normal_match)(result)
             message = {
                 'type': 'arena.end',
                 'result': result,
