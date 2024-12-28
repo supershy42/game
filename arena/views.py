@@ -8,8 +8,7 @@ from asgiref.sync import async_to_sync
 from .dto import BaseMatchDTO
 
 class MatchHistoryView(APIView):
-    def get(self, request):
-        user_id = request.query_params.get('user_id')
+    def get(self, request, user_id):
         if not async_to_sync(UserService.get_user)(user_id, request.token):
             return Response(
                 {"detail": "User not found."},
