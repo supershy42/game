@@ -1,4 +1,5 @@
 import redis.asyncio as redis
+import json
 from django.conf import settings
 
 redis_client = redis.Redis(host=settings.REDIS_HOST, port=settings.REDIS_PORT, db=settings.REDIS_DB)
@@ -23,14 +24,33 @@ class ReceptionRedisService:
     @staticmethod
     def get_playing_reception_key():
         return 'playing_reception'
+    
+    @staticmethod
+    def get_partial_detail(user_detail):
+        return {
+            "user_id": str(user_detail["id"]),
+            "nickname": user_detail["nickname"],
+            "avatar": user_detail["avatar"],
+            "is_ready": 0
+        }
 
     @staticmethod
-    async def add_user(reception_id, user_id):
+    async def add_user(reception_id, user_id, token):
         participants_key = ReceptionRedisService.get_participants_key(reception_id)
-        await redis_client.hset(participants_key, user_id, 0)
-        
         user_reception_key = ReceptionRedisService.get_user_reception_key(user_id)
+        
+        if await redis_client.hexists(participants_key, user_id):
+            return False
+        
+        user_detail = await UserRedisService.get_or_fetch_user(user_id, token)
+        if not user_detail:
+            return False
+        
+        partial_detail = ReceptionRedisService.get_partial_detail(user_detail)
+        
+        await redis_client.hset(participants_key, user_id, json.dumps(partial_detail))
         await redis_client.set(user_reception_key, reception_id)
+        return True
 
     @staticmethod    
     async def remove_user(reception_id, user_id):    
@@ -39,11 +59,17 @@ class ReceptionRedisService:
         
         user_reception_key = ReceptionRedisService.get_user_reception_key(user_id)
         await redis_client.delete(user_reception_key)
-
-    @staticmethod    
-    async def update_user_state(reception_id, user_id, is_ready):
+        
+    @staticmethod
+    async def toggle_ready(reception_id, user_id):
         participants_key = ReceptionRedisService.get_participants_key(reception_id)
-        await redis_client.hset(participants_key, user_id, int(is_ready))
+        raw_data = await redis_client.hget(participants_key, user_id)
+        if raw_data:
+            user_detail = json.loads(raw_data.decode())
+            current_ready_state = user_detail.get("is_ready", 0)
+            new_ready_state = 0 if current_ready_state == 1 else 1
+            user_detail["is_ready"] = new_ready_state
+            await redis_client.hset(participants_key, user_id, json.dumps(user_detail))
 
     @staticmethod    
     async def should_remove(reception_id):
@@ -58,14 +84,19 @@ class ReceptionRedisService:
         participants = await ReceptionRedisService.get_participants(reception_id)
 
         if len(participants) > 1:
-            return all(v == 1 for v in participants.values())
+            return all(p["is_ready"] == 1 for p in participants)
         return False
 
     @staticmethod
     async def get_participants(reception_id):
         participants_key = ReceptionRedisService.get_participants_key(reception_id)
-        participants = await redis_client.hgetall(participants_key)
-        return {k.decode(): int(v.decode()) for k, v in participants.items()}
+        raw_map = await redis_client.hgetall(participants_key)
+        
+        participants = []
+        for _, v in raw_map.items():
+            user_detail = json.loads(v.decode())
+            participants.append(user_detail)
+        return participants
 
     @staticmethod
     async def get_current_reception(user_id):
@@ -121,10 +152,39 @@ class UserRedisService:
     def get_channel_name_key():
         return 'user_channels'
     
+    @staticmethod
+    def get_user_detail_key(user_id):
+        return f"user:detail:{user_id}"
+    
     @staticmethod    
     async def get_channel_name(user_id):
         channel_name = await redis_client.hget(UserRedisService.get_channel_name_key(), user_id)
         return channel_name.decode() if channel_name else None
+    
+    @staticmethod
+    async def cache_user_detail(user_id, user_detail: dict, ttl=21600):
+        key = UserRedisService.get_user_detail_key(user_id)
+        await redis_client.set(key, json.dumps(user_detail), ex=ttl)
+    
+    @staticmethod
+    async def get_cached_user(user_id) -> dict:
+        key = UserRedisService.get_user_detail_key(user_id)
+        raw_data = await redis_client.get(key)
+        if raw_data:
+            return json.loads(raw_data)
+        return None
+    
+    @staticmethod
+    async def get_or_fetch_user(user_id, token):
+        cached = await UserRedisService.get_cached_user(user_id)
+        if cached:
+            return cached
+        
+        from config.services import UserService
+        user_detail = await UserService.get_user(user_id, token)
+        await UserRedisService.cache_user_detail(user_id, user_detail)
+        
+        return user_detail
 
 
 class ArenaRedisService:
