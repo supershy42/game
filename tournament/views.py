@@ -7,6 +7,7 @@ from .models import Tournament, TournamentMatch
 from .services import TournamentService
 from config.custom_validation_error import CustomValidationError
 from config.response_builder import response_error, response_ok
+from .dto import TournamentMatchDTO
 
 class TournamentCreateView(APIView):
     def post(self, request):
@@ -49,5 +50,6 @@ class TournamentBracketView(APIView):
         matches = TournamentMatch.objects.filter(round__tournament_id=tournament_id)\
             .order_by('match_number')
             
-        serializer = TournamentMatchSerializer(matches, many=True)
+        match_dtos = [TournamentMatchDTO(match, request.token).to_dict() for match in matches]
+        serializer = TournamentMatchSerializer(match_dtos, many=True)
         return Response(serializer.data)

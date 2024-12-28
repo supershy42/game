@@ -33,14 +33,6 @@ class TournamentSerializer(serializers.ModelSerializer):
     
 
 class TournamentMatchSerializer(BaseMatchSerializer):
-    round_number = serializers.IntegerField(source='round.round_number', read_only=True)
-    
-    class Meta(BaseMatchSerializer.Meta):
-        model = TournamentMatch
-        fields = [
-            'id',
-            'round_number',
-            'match_number',
-            'parent_match',
-            'parent_match_player_team'
-        ] + BaseMatchSerializer.Meta.fields
+    round = serializers.IntegerField(read_only=True)
+    match_number = serializers.IntegerField()
+    state = serializers.CharField(max_length=20)

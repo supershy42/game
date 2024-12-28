@@ -1,19 +1,14 @@
 from rest_framework import serializers
-from .models import NormalMatch
 
-class BaseMatchSerializer(serializers.ModelSerializer):
-    class Meta:
-        fields = [
-            'left_player',
-            'right_player',
-            'left_player_score',
-            'right_player_score',
-            'winner',
-            'state',
-            'created_at',
-        ]
+class BaseMatchSerializer(serializers.Serializer):
+    id = serializers.IntegerField(required=False)
+    left_player = serializers.JSONField(allow_null=True)
+    right_player = serializers.JSONField(allow_null=True)
+    left_player_score = serializers.IntegerField(default=0)
+    right_player_score = serializers.IntegerField(default=0)
+    winner = serializers.JSONField(allow_null=True)
+    created_at = serializers.DateTimeField()
         
 class NormalMatchSerializer(BaseMatchSerializer):
-    class Meta(BaseMatchSerializer.Meta):
-        model = NormalMatch
-        fields = ['id'] + BaseMatchSerializer.Meta.fields
+    def to_representation(self, instance):
+        return super().to_representation(instance)

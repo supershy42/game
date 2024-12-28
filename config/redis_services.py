@@ -176,13 +176,16 @@ class UserRedisService:
     
     @staticmethod
     async def get_or_fetch_user(user_id, token):
+        if not user_id:
+            return
         cached = await UserRedisService.get_cached_user(user_id)
         if cached:
             return cached
         
         from config.services import UserService
         user_detail = await UserService.get_user(user_id, token)
-        await UserRedisService.cache_user_detail(user_id, user_detail)
+        if user_detail:
+            await UserRedisService.cache_user_detail(user_id, user_detail)
         
         return user_detail
 
