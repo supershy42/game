@@ -1,7 +1,8 @@
 import redis.asyncio as redis
 import json
+from django.conf import settings
 
-redis_client = redis.Redis(host='localhost', port=6379, db=0)
+redis_client = redis.Redis(host=settings.REDIS_HOST, port=settings.REDIS_PORT, db=settings.REDIS_DB)
 
 class ReceptionRedisService:
     @staticmethod
@@ -187,6 +188,15 @@ class UserRedisService:
             await UserRedisService.cache_user_detail(user_id, user_detail)
         
         return user_detail
+    
+    @staticmethod
+    async def get_or_fetch_user_exclude_email(user_id, token):
+        user = await UserRedisService.get_or_fetch_user(user_id, token)
+        if not user:
+            return
+        if 'email' in user:
+            user.pop('email')
+        return user
 
 
 class ArenaRedisService:

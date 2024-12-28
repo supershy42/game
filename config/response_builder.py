@@ -1,13 +1,13 @@
 from rest_framework.response import Response
 from rest_framework import status
-from rest_framework.exceptions import ErrorDetail
+from .custom_validation_error import CustomValidationError
 
 def response_ok(message="ok", status=status.HTTP_200_OK):
     if not isinstance(message, dict):
         message = {"message": message}
     return Response(message, status=status)
 
-def response_error(errors):
+def response_errors(errors):
     if not errors:
         errors = "unknown error."
     return Response(
@@ -15,7 +15,7 @@ def response_error(errors):
         status=extract_status(errors)
     )
     
-def response_error(custom_validation_error):
+def response_error(custom_validation_error:CustomValidationError):
     error_type = custom_validation_error.error_type
     return Response(
         {"message": error_type.message},
@@ -23,12 +23,12 @@ def response_error(custom_validation_error):
     )
 
 def extract_status(errors):
-    for key, value in errors.items():
-        if key == "status":
-            if isinstance(value, ErrorDetail):
-                return str(value)
-            elif isinstance(value, list) and isinstance(value[0], ErrorDetail):
-                return str(value[0])
-        elif isinstance(value, dict):  # 중첩된 dict 처리
-            return extract_status(value)  # 재귀 호출
-    return None
+    if isinstance(errors, dict):
+        for key, value in errors.items():
+            if key == "status" and isinstance(value, str) and value.isdigit():
+                return int(value)
+            elif isinstance(value, dict):
+                nested_status = extract_status(value)
+                if nested_status:
+                    return nested_status
+    return status.HTTP_400_BAD_REQUEST
