@@ -1,7 +1,7 @@
 import aiohttp
 from config.settings import USER_SERVICE_URL
 from channels.layers import get_channel_layer
-from .redis_utils import get_channel_name
+from .redis_services import UserRedisService
 
 class UserService:
     @staticmethod
@@ -54,7 +54,7 @@ class UserService:
     @staticmethod
     async def send_notification(user_id, message):
         channel_layer = get_channel_layer()
-        channel_name = await get_channel_name(user_id)
+        channel_name = await UserRedisService.get_channel_name(user_id)
         if not channel_name:
             return False
         

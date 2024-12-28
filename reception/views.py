@@ -4,16 +4,16 @@ from rest_framework import status
 from .serializers import ReceptionSerializer, ReceptionJoinSerializer, ReceptionInvitationSerializer
 from rest_framework.generics import ListAPIView
 from .models import Reception
-from .services import reception_websocket_url, validate_join_reception, invite
-from .jwt_utils import create_ws_token
+from .services import ReceptionService
 from config.response_builder import response_error, response_ok
 from config.custom_validation_error import CustomValidationError
 from asgiref.sync import async_to_sync
 from config.services import UserService
+from config.redis_services import ReceptionRedisService
 
 class CreateReceptionView(APIView):
     def post(self, request):
-        serializer = ReceptionSerializer(data=request.data)
+        serializer = ReceptionSerializer(data=request.data, context={'request': request})
         if serializer.is_valid():
             reception = serializer.save()
             response_serializer = ReceptionSerializer(reception)
@@ -37,12 +37,9 @@ class ReceptionJoinView(APIView):
         user_id = request.user_id
         password = serializer.validated_data.get('password')
         try:
-            async_to_sync(validate_join_reception)(reception_id, user_id, password)
-            message = {
-                "url": reception_websocket_url(reception_id),
-                "token": create_ws_token(user_id, reception_id)
-            }
-            return response_ok(message=message)
+            async_to_sync(ReceptionService.validate_join)(reception_id, user_id, password)
+            async_to_sync(ReceptionRedisService.add_allowed_user)(reception_id, user_id)
+            return response_ok()
         except CustomValidationError as e:
             return response_error(e)
 
@@ -54,7 +51,7 @@ class ReceptionInvitationView(APIView):
         to_user_id = serializer.validated_data['to_user_id']
         from_user_name = async_to_sync(UserService.get_user_name)(from_user_id, request.token)
         try:
-            async_to_sync(invite)(from_user_id, to_user_id, from_user_name)
+            async_to_sync(ReceptionService.invite)(from_user_id, to_user_id, from_user_name)
             return response_ok()
         except CustomValidationError as e:
             return response_error(e)

@@ -3,7 +3,6 @@ from django.db.models import Q
 from django.db import IntegrityError, transaction
 from datetime import datetime
 import uuid
-from asgiref.sync import sync_to_async
 
 class ArenaService:
     @staticmethod

@@ -6,8 +6,8 @@ import json
 from config.services import UserService
 from .domain.arena_manager import ArenaManager
 from .enums import Direction, ArenaType
-from reception.services import reception_websocket_url
-from config.redis_utils import remove_redis_playing_reception
+from reception.services import ReceptionService
+from config.redis_services import ReceptionRedisService
 from tournament.services import TournamentService
 from asgiref.sync import sync_to_async
 from config.close_codes import CloseCode
@@ -118,11 +118,11 @@ class ArenaConsumer(AsyncWebsocketConsumer):
             message = {
                 'type': 'arena.end',
                 'result': result,
-                'url': reception_websocket_url(self.arena_id)
+                'url': ReceptionService.get_websocket_url(self.arena_id)
             }
             await self.send_json(message)
             
-            await remove_redis_playing_reception(self.arena_id)
+            await ReceptionRedisService.unset_playing(self.arena_id)
         
         await self.close()
         

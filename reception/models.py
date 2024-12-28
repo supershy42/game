@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth.hashers import make_password, check_password
 
 class Reception(models.Model):
+    creator = models.IntegerField()
     name = models.CharField(max_length=20)
     password = models.CharField(max_length=20, blank=False, null=True)
     max_players = models.PositiveIntegerField(default=2)
@@ -10,11 +11,10 @@ class Reception(models.Model):
     def has_password(self):
         return self.password is not None
     
-    def set_password(self, raw_password):
-        if raw_password is not None:
-            self.password = make_password(raw_password)
-        else:
-            self.password = None
+    def save(self, *args, **kwargs):
+        if self.password:
+            self.password = make_password(self.password)
+        super().save(*args, **kwargs)
         
     def check_password(self, raw_password):
         if self.password is None:
