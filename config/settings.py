@@ -19,7 +19,7 @@ REDIS_CAPACITY = config('REDIS_CAPACITY', cast=int)
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['api-gateway', 'localhost']
 
 
 # Application definition
