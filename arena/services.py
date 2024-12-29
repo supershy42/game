@@ -20,20 +20,30 @@ class ArenaService:
         return f"{unique_id}_{timestamp}"
     
     @staticmethod
-    def save_normal_match(result):
+    def create_normal_match(unique_id, reception_id):
         try:
             with transaction.atomic():
                 NormalMatch.objects.create(
-                    unique_id=result['unique_id'],
-                    left_player=result['left_player'],
-                    right_player=result['right_player'],
-                    left_player_score=result['left_player_score'],
-                    right_player_score=result['right_player_score'],
-                    winner=result['winner'],
-                    state=NormalMatch.State.FINISHED,
+                    unique_id=unique_id,
+                    reception_id=reception_id,
                 )
         except IntegrityError:
             pass
+    
+    @staticmethod
+    def save_normal_match(match:NormalMatch, result):
+        match.unique_id=result['unique_id']
+        match.left_player=result['left_player']
+        match.right_player=result['right_player']
+        match.left_player_score=result['left_player_score']
+        match.right_player_score=result['right_player_score']
+        match.winner=result['winner']
+        match.state=NormalMatch.State.FINISHED
+        match.save()
+        
+    @staticmethod
+    async def get_match(unique_id):
+        return await NormalMatch.objects.aget(unique_id=unique_id)
         
     @staticmethod
     def get_user_matches(user_id):
