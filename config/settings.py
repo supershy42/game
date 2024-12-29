@@ -31,13 +31,13 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'channels',
-    'game',
-    'corsheaders'
+    'reception',
+    'arena',
+    'tournament',
 ]
 
 # 위에서부터 맞는 미들웨어 찾으므로 순서 중요
 MIDDLEWARE = [
-    'corsheaders.middleware.CorsMiddleware',
     'config.middleware.CustomHttpMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -72,12 +72,26 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+if DATABASE_ENGINE == 'sqlite3':
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3'
+        }
     }
-}
+elif DATABASE_ENGINE == 'postgresql':
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': config('POSTGRES_DB', default=''),
+            'USER': config('POSTGRES_USER', default=''),
+            'PASSWORD': config('POSTGRES_PASSWORD', default=''),
+            'HOST': config('POSTGRES_HOST', default='localhost'),
+            'PORT': config('POSTGRES_PORT', default='5432'),
+        }
+    }
+else:
+    raise ValueError("Unsupported DATABASE_ENGINE value")
 
 
 # Password validation
@@ -108,7 +122,7 @@ TIME_ZONE = 'Asia/Seoul'
 
 USE_I18N = True
 
-USE_TZ = True
+USE_TZ = False
 
 
 # Static files (CSS, JavaScript, Images)
@@ -128,10 +142,14 @@ CHANNEL_LAYERS = {
     'default': {
         'BACKEND': 'channels_redis.core.RedisChannelLayer',
         'CONFIG': {
-            "hosts": [('127.0.0.1', 6379)],
+            "hosts": [(REDIS_HOST, REDIS_PORT)],
+            "capacity": REDIS_CAPACITY, # 메시지 큐 용량
         },
     },
 }
 
-# CORS
-CORS_ALLOW_ALL_ORIGINS = True
+# PAGENATIOIN
+REST_FRAMEWORK = {
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 5,  # 기본 페이지 크기 설정
+}

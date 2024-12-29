@@ -3,23 +3,26 @@ import json
 from django.utils.deprecation import MiddlewareMixin
 from channels.middleware import BaseMiddleware
 from django.http import JsonResponse
+from urllib.parse import parse_qs
 
 
 class CustomHttpMiddleware(MiddlewareMixin):
     def process_request(self, request):
-        token = request.headers.get("Authorization")
-        if not token:
+        token_line = request.headers.get("Authorization")
+        if not token_line:
             return JsonResponse({"error": "Authentication token missing."}, status=401)
 
         try:
-            payload = jwt.decode(token.split(" ")[1], options={"verify_signature": False})
+            token = token_line.split(" ")[1]
+            request.token = token
+            payload = jwt.decode(token, options={"verify_signature": False})
             request.user_id = payload.get("user_id")
         except Exception as e:
             return JsonResponse({"error": str(e)}, status=401)
 
 class CustomWsMiddleware(BaseMiddleware):
     async def __call__(self, scope, receive, send):
-        token = get_jwt(scope['headers'])
+        token = get_jwt(scope)
         if not token:
             return await self.reject_request(send, "Authentication token missing.")
         
@@ -48,11 +51,8 @@ class CustomWsMiddleware(BaseMiddleware):
             "body": body,
         })
         
-def get_jwt(headers):
-    auth_header = dict(headers).get(b'authorization')
-    if auth_header:
-        auth_header = auth_header.decode()
-        prefix, token = auth_header.split(' ')
-        if prefix.lower() == 'bearer':
-            return token
-    return None
+def get_jwt(scope):
+    query_string = scope.get('query_string', b'').decode()
+    query_params = parse_qs(query_string)
+    token = query_params.get('token', [None])[0]
+    return token
