@@ -1,15 +1,23 @@
 from pathlib import Path
+from decouple import config # ENV
+
+# ENV
+SECRET_KEY = config("SECRET_KEY")
+DEBUG = config("DEBUG", default=False, cast=bool)
+
+USER_SERVICE_URL = config("USER_SERVICE_URL")
+
+DATABASE_ENGINE = config('DATABASE_ENGINE', default='sqlite3')
+
+REDIS_HOST = config('REDIS_HOST')
+REDIS_PORT = config('REDIS_PORT', cast=int)
+REDIS_DB = config('REDIS_DB', cast=int)
+REDIS_CAPACITY = config('REDIS_CAPACITY', cast=int)
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-(bln+taoyt4&=u!yrg&niiuzj$%s77=lc^c9!ay^6)d6yess4&'
-
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
-
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['api-gateway']
 
 
 # Application definition
