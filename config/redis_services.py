@@ -188,6 +188,15 @@ class UserRedisService:
             await UserRedisService.cache_user_detail(user_id, user_detail)
         
         return user_detail
+    
+    @staticmethod
+    async def get_or_fetch_user_exclude_email(user_id, token):
+        user = await UserRedisService.get_or_fetch_user(user_id, token)
+        if not user:
+            return
+        if 'email' in user:
+            user.pop('email')
+        return user
 
 
 class ArenaRedisService:

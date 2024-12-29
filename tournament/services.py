@@ -6,6 +6,9 @@ from config.custom_validation_error import CustomValidationError
 from config.error_type import ErrorType
 from asgiref.sync import async_to_sync
 from django.db import IntegrityError, transaction
+from django.db.models import Q
+from config.redis_services import UserRedisService
+
 
 class TournamentService:
     @staticmethod
@@ -43,12 +46,33 @@ class TournamentService:
         return match
     
     @staticmethod
+    def get_user_match(tournament: Tournament, user_id):
+        match = TournamentMatch.objects.filter(
+            round__tournament=tournament,
+            state__in=[TournamentMatch.State.PENDING, TournamentMatch.State.READY]
+        ).filter(
+            Q(left_player=user_id) | Q(right_player=user_id)
+        ).first()
+        
+        if match:
+            return match.match_number
+        return None
+    
+    @staticmethod
     async def is_match_finished(tournament_id, match_number):
         match = await TournamentService.get_match(tournament_id, match_number)
         
         if match.state == TournamentMatch.State.FINISHED:
             return True
         return False
+    
+    @staticmethod
+    def get_participants_detail(tournament: Tournament, token):
+        participant_ids = TournamentService.get_all_participant_ids(tournament)
+        participants_detail = [
+            async_to_sync(UserRedisService.get_or_fetch_user_exclude_email)(participant_id, token) for participant_id in participant_ids
+        ]
+        return participants_detail
 
     @staticmethod
     def join(tournament_id, user_id, token):
