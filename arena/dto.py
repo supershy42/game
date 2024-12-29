@@ -25,11 +25,7 @@ class BaseMatchDTO:
         }
         
     def _get_user(self, user_id, token):
-        user = async_to_sync(UserRedisService.get_or_fetch_user)(user_id, token)
-        if not user:
-            return
-        if 'email' in user:
-            user.pop('email')
+        user = async_to_sync(UserRedisService.get_or_fetch_user_exclude_email)(user_id, token)
         return user
     
     def _format_datetime(self, dt):
