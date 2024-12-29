@@ -35,12 +35,17 @@ class Ball:
             self.velocity["x"] *= -1
             
     def _check_bar_collision(self, bar: "Bar") -> bool:
+        bar_collosion_bounds = bar.get_collision_bounds()
+        bar_x1 = bar_collosion_bounds["x1"]
+        bar_x2 = bar_collosion_bounds["x2"]
+        bar_y1 = bar_collosion_bounds["y1"]
+        bar_y2 = bar_collosion_bounds["y2"]
         return (
-            bar.x <= self.x + self.radius <= bar.x + bar.width and
-            bar.y <= self.y <= bar.y + bar.length
+            bar_x1 <= self.x + self.radius and
+            bar_y1 <= self.y <= bar_y2
         ) or (
-            bar.x <= self.x - self.radius <= bar.x + bar.width and
-            bar.y <= self.y <= bar.y + bar.length
+            self.x - self.radius <= bar_x2 and
+            bar_y1 <= self.y <= bar_y2
         )
 
     def check_boundary_collision(self):
