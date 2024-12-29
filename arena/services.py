@@ -32,7 +32,7 @@ class ArenaService:
     
     @staticmethod
     def save_normal_match(match:NormalMatch, result):
-        match.unique_id=result['unique_id']
+        match.unique_id=result['arena_id']
         match.left_player=result['left_player']
         match.right_player=result['right_player']
         match.left_player_score=result['left_player_score']
