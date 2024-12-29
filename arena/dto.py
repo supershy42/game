@@ -6,6 +6,7 @@ from datetime import datetime
 class BaseMatchDTO:
     def __init__(self, match: BaseMatch, token):
         self.id = getattr(match, 'id', None)
+        self.reception_id = match.reception_id
         self.left_player = self._get_user(match.left_player, token)
         self.right_player = self._get_user(match.right_player, token)
         self.left_player_score = match.left_player_score
@@ -16,6 +17,7 @@ class BaseMatchDTO:
     def to_dict(self):
         return {
             "id": self.id,
+            "reception_id": self.reception_id,
             "left_player": self.left_player,
             "right_player": self.right_player,
             "left_player_score": self.left_player_score,
@@ -25,11 +27,7 @@ class BaseMatchDTO:
         }
         
     def _get_user(self, user_id, token):
-        user = async_to_sync(UserRedisService.get_or_fetch_user)(user_id, token)
-        if not user:
-            return
-        if 'email' in user:
-            user.pop('email')
+        user = async_to_sync(UserRedisService.get_or_fetch_user_exclude_email)(user_id, token)
         return user
     
     def _format_datetime(self, dt):

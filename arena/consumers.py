@@ -7,7 +7,7 @@ from config.services import UserService
 from .domain.arena_manager import ArenaManager
 from .enums import Direction, ArenaType
 from reception.services import ReceptionService
-from config.redis_services import ReceptionRedisService
+from config.redis_services import ReceptionRedisService, ArenaRedisService
 from tournament.services import TournamentService
 from asgiref.sync import sync_to_async
 from config.close_codes import CloseCode
@@ -18,6 +18,7 @@ class ArenaConsumer(AsyncWebsocketConsumer):
         if "arena_id" in kwargs:
             self.arena_id = self.scope['url_route']['kwargs']['arena_id']
             self.arena_group_name = ArenaService.get_arena_group_name(self.arena_id)
+            self.match = await ArenaService.get_match(self.arena_id)
             self.type = ArenaType.NORMAL
         else:
             self.tournament_id = kwargs['tournament_id']
@@ -30,7 +31,6 @@ class ArenaConsumer(AsyncWebsocketConsumer):
         self.token = self.scope.get('token')
         self.arena = None        
         
-        # redis에서 참가자 명단에 있는지 검증해야 함
         if not await self.validate_access():
             self.close(code=CloseCode.INVALID_ACCESS)
             return
@@ -56,8 +56,9 @@ class ArenaConsumer(AsyncWebsocketConsumer):
             })
         
     async def validate_access(self):
-        # redis에서 참가자 명단에 있는지 검증해야 함
         if self.type == ArenaType.NORMAL:
+            if not await ArenaRedisService.is_allowed_user(self.arena_id, self.user_id):
+                return False
             return True
         else:
             if await TournamentService.is_match_finished(self.tournament_id, self.match_number):
@@ -78,8 +79,14 @@ class ArenaConsumer(AsyncWebsocketConsumer):
         if self.arena.is_started() and not self.arena.is_finished:
             await self.broadcast_message('exit', f'{self.user_name} is exit arena.')
             await self.arena.forfeit(self.user_id)
+            await ReceptionRedisService.remove_allowed_user(self.match.reception_id, self.user_id)
+            await ReceptionRedisService.remove_user(self.match.reception_id, self.user_id)
+            
+            if await ReceptionRedisService.should_remove(self.match.reception_id):
+                await ReceptionService.remove(self.match.reception_id)
             
         await self.arena.remove_player(self.player)
+        await ArenaRedisService.remove_allowed_user(self.arena_id, self.user_id)
         
     async def receive(self, text_data):
         try:
@@ -114,15 +121,15 @@ class ArenaConsumer(AsyncWebsocketConsumer):
             }
             await self.send_json(message)
         else:
-            await sync_to_async(ArenaService.save_normal_match)(result)
+            await sync_to_async(ArenaService.save_normal_match)(self.match, result)
             message = {
                 'type': 'arena.end',
                 'result': result,
-                'url': ReceptionService.get_websocket_url(self.arena_id)
+                'reception_id': self.match.reception_id
             }
             await self.send_json(message)
             
-            await ReceptionRedisService.unset_playing(self.arena_id)
+            await ReceptionService.reset_state(self.match.reception_id)
         
         await self.close()
         
