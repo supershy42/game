@@ -5,12 +5,14 @@ from arena.serializers import BaseMatchSerializer
 class TournamentSerializer(serializers.ModelSerializer):
     current_participants = serializers.ReadOnlyField()
     total_rounds = serializers.ReadOnlyField()
+    creator = serializers.CharField(max_length=30, read_only=True)
     
     class Meta:
         model = Tournament
         fields = [
             'id',
             'name',
+            'creator',
             'max_participants',
             'winner',
             'created_at',
@@ -18,9 +20,6 @@ class TournamentSerializer(serializers.ModelSerializer):
             'current_participants',
             'total_rounds'
         ]
-        extra_kwargs = {
-            'creator': {'read_only': True},
-        }
     
     def validate_max_participants(self, value):
         if not Tournament.is_valid_participants(value):

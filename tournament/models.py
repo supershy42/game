@@ -8,8 +8,7 @@ class Tournament(models.Model):
         IN_PROGRESS = 'in_progress', 'In Progress'
         FINISHED = 'finished', 'Finished'
         
-    # VALID_PARTICIPANTS = [4,8,16]
-    VALID_PARTICIPANTS = [1,2,4,8,16] # 개발용
+    VALID_PARTICIPANTS = [4,8,16]
 
     creator = models.IntegerField()
     name = models.CharField(max_length=40)
