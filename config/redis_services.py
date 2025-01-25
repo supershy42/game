@@ -20,10 +20,6 @@ class ReceptionRedisService:
     @staticmethod
     def get_allowed_users_key(reception_id):
         return f"reception:{reception_id}:allowed_users"
-
-    @staticmethod
-    def get_playing_reception_key():
-        return 'playing_reception'
     
     @staticmethod
     def get_partial_detail(user_detail):
@@ -69,6 +65,16 @@ class ReceptionRedisService:
             current_ready_state = user_detail.get("is_ready", 0)
             new_ready_state = 0 if current_ready_state == 1 else 1
             user_detail["is_ready"] = new_ready_state
+            await redis_client.hset(participants_key, user_id, json.dumps(user_detail))
+            
+    @staticmethod
+    async def reset_ready_state(reception_id):
+        participants_key = ReceptionRedisService.get_participants_key(reception_id)
+        raw_map = await redis_client.hgetall(participants_key)
+        
+        for user_id, raw_data in raw_map.items():
+            user_detail = json.loads(raw_data.decode())
+            user_detail["is_ready"] = 0
             await redis_client.hset(participants_key, user_id, json.dumps(user_detail))
 
     @staticmethod    
@@ -130,22 +136,7 @@ class ReceptionRedisService:
     async def remove_allowed_user(reception_id, user_id):
         key = ReceptionRedisService.get_allowed_users_key(reception_id)
         await redis_client.srem(key, user_id)
-
-    @staticmethod
-    async def set_playing(reception_id):
-        key = ReceptionRedisService.get_playing_reception_key()
-        await redis_client.sadd(key, reception_id)
-
-    @staticmethod
-    async def is_playing(reception_id):
-        key = ReceptionRedisService.get_playing_reception_key()
-        return await redis_client.sismember(key, reception_id)
-
-    @staticmethod
-    async def unset_playing(reception_id):
-        key = ReceptionRedisService.get_playing_reception_key()
-        await redis_client.srem(key, reception_id)
-        
+      
 
 class UserRedisService:
     @staticmethod
@@ -205,6 +196,17 @@ class ArenaRedisService:
         return f'arena_participants:{arena_id, user_id}'
     
     @staticmethod
-    async def set_participants(arena_id, user_id, ttl=3000):
+    async def add_allowed_user(arena_id, user_id, ttl=3000):
         key = ArenaRedisService.get_arena_participants_key(arena_id, user_id)
         await redis_client.set(key, 1, ex=ttl)
+        
+    @staticmethod
+    async def is_allowed_user(arena_id, user_id):
+        key = ArenaRedisService.get_arena_participants_key(arena_id, user_id)
+        exists = await redis_client.exists(key)
+        return exists > 0
+    
+    @staticmethod
+    async def remove_allowed_user(arena_id, user_id):
+        key = ArenaRedisService.get_arena_participants_key(arena_id, user_id)
+        await redis_client.delete(key)

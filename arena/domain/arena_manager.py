@@ -7,7 +7,7 @@ class ArenaManager:
     @classmethod
     def get_arena(cls, arena_id):
         if arena_id not in cls._arenas:
-            cls._arenas[arena_id] = Arena(unique_id=ArenaService.generate_unique_id())
+            cls._arenas[arena_id] = Arena(arena_id=arena_id)
         return cls._arenas[arena_id]
     
     @classmethod

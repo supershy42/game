@@ -10,6 +10,7 @@ class BaseMatch(models.Model):
         LEFT = 'left', 'Left'
         RIGHT = 'right', 'Right'
     
+    reception_id = models.IntegerField(null=True)
     unique_id = models.CharField(max_length=50, unique=True, null=True, blank=True)
     left_player = models.IntegerField(null=True)
     right_player = models.IntegerField(null=True)
