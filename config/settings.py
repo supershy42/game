@@ -5,8 +5,6 @@ from decouple import config # ENV
 SECRET_KEY = config("SECRET_KEY")
 DEBUG = config("DEBUG", default=False, cast=bool)
 
-WS_SECRET_KEY = config("WS_SECRET_KEY")
-WS_ALGORITHM = config("WS_ALGORITHM")
 USER_SERVICE_URL = config("USER_SERVICE_URL")
 
 DATABASE_ENGINE = config('DATABASE_ENGINE', default='sqlite3')
@@ -19,7 +17,7 @@ REDIS_CAPACITY = config('REDIS_CAPACITY', cast=int)
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-ALLOWED_HOSTS = []
+# ALLOWED_HOSTS = ['api-gateway', 'localhost']
 
 
 # Application definition
