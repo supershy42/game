@@ -1,7 +1,7 @@
 from django.urls import path, include
 
 urlpatterns = [
-    path('api/reception/', include('reception.urls')),
-    path('api/tournament/', include('tournament.urls')),
-    path('api/arena/', include('arena.urls')),
+    path('api/game/reception/', include('reception.urls')),
+    path('api/game/tournament/', include('tournament.urls')),
+    path('api/game/arena/', include('arena.urls')),
 ]
