@@ -6,7 +6,7 @@ import uuid
 
 class ArenaService:
     @staticmethod
-    def get_arena_group_name(arena_id):
+    def get_group_name(arena_id):
         return f"arena_group_{arena_id}"
 
     @staticmethod

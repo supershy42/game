@@ -24,7 +24,7 @@ class Arena:
         self.group_name = None
         self.broadcast_func = None
     
-    def set_messanger(self, group_name, broadcast_func):
+    def set_messenger(self, group_name, broadcast_func):
         if self.group_name is None:
             self.group_name = group_name
         if self.broadcast_func is None:
