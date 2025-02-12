@@ -17,7 +17,7 @@ class ReceptionService:
     @staticmethod
     async def get_participants_count(reception_id):
         return len(await ReceptionRedisService.get_participants(reception_id))
-    
+
     @staticmethod
     async def validate_join(reception_id, user_id, password):
         try:
@@ -31,10 +31,10 @@ class ReceptionService:
             raise CustomValidationError(ErrorType.RECEPTION_FULL)
 
         invited = await ReceptionRedisService.is_invited(reception_id, user_id)
-        
+
         if not invited and not reception.check_password(password):
             raise CustomValidationError(ErrorType.INVALID_PASSWORD)
-        
+
     @staticmethod
     async def invite(from_user_id, to_user_id, from_user_name):
         reception_id = await ReceptionRedisService.get_current_reception(from_user_id)
@@ -43,13 +43,15 @@ class ReceptionService:
 
         result = await UserService.send_notification(to_user_id, {
             "type": "reception.invitation",
-            "sender": from_user_name,
-            "reception_id": reception_id
+            "content": {
+                "inviter": from_user_name,
+            	"reception_id": reception_id
+			}
         })
 
         if result:
             await ReceptionRedisService.set_invitation(reception_id, to_user_id)
-        
+
     @staticmethod
     async def exists(reception_id):
         return await Reception.objects.filter(id=reception_id).aexists()
