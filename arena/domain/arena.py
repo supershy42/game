@@ -9,18 +9,18 @@ if TYPE_CHECKING:
     
 
 class Arena:
-    def __init__(self, unique_id):
-        self.unique_id = unique_id
+    def __init__(self, arena_id):
+        self.arena_id = arena_id
         self.width = 138
         self.height = 76
         self.left_player = None
         self.right_player = None
         self.ball = Ball(self)
         self.current_round = 1
-        self.max_score = 3
+        self.max_score = 2
         self._loop_task = None
         self.is_finished = False
-        self.speed = 10
+        self.speed = 5
         self.group_name = None
         self.broadcast_func = None
     
@@ -101,7 +101,7 @@ class Arena:
         winner = self.check_winner()
         if winner:
             arena_result = {
-                "unique_id": self.unique_id,
+                "arena_id": self.arena_id,
                 "winner": winner.user_id,
                 "left_player_score": self.left_player.score,
                 "right_player_score": self.right_player.score,
