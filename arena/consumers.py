@@ -25,7 +25,7 @@ class ArenaConsumer(AsyncWebsocketConsumer):
         await self.accept()
         await self.channel_layer.group_add(self.arena_group_name, self.channel_name)
         
-        self.initialize_arena()
+        await self.initialize_arena()
         
     async def initialize_data(self):
         kwargs = self.scope["url_route"]["kwargs"]
