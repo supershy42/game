@@ -24,9 +24,9 @@ class Bar:
         self.y = self.arena.height // 2
         if self.team == BaseMatch.Team.LEFT:
             self.x = 0 + self.x_radius + self.margin
-        elif self.team == BaseMatch.Team.RIGHT:
-            self.x = self.arena.width - self.x_radius - self.margin
-            
+        else:
+            self.x = self.arena.width - self.x_radius - self.margin    
+    
     def get_collision_bounds(self):
         return {
             "x1": self.x - self.x_radius,

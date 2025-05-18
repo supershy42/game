@@ -9,7 +9,7 @@ class Player:
     def __init__(self, user_id, arena: "Arena", team:BaseMatch.Team):
         self.team:BaseMatch.Team = team
         self.score = 0
-        self.bar:Bar = Bar(arena, None)
+        self.bar:Bar = Bar(arena, team)
         self.user_id = user_id
         
     def increment_score(self):

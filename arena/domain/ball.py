@@ -9,9 +9,9 @@ from arena.models import BaseMatch
 class Ball:
     def __init__(self, arena: "Arena"):
         self.arena = arena
-        self.reset()
         self.speed = 3
         self.radius = 1
+        self.reset()
         
     def update_position(self):
         self.x += self.velocity["x"]
@@ -27,11 +27,12 @@ class Ball:
         if self.y - self.radius <= 0 or self.y + self.radius >= self.arena.height:
             self.velocity["y"] *= -1  # 위/아래 벽 충돌
 
-        if self._check_bar_collision(lbar) or self._check_bar_collision(rbar):
+        if self.check_bar_collision(lbar) or self.check_bar_collision(rbar):
             self.velocity["x"] *= -1
             
-    def _check_bar_collision(self, bar: "Bar") -> bool:
+    def check_bar_collision(self, bar: "Bar") -> bool:
         bounds = bar.get_collision_bounds()
+        
         return (
             bounds["y1"] <= self.y <= bounds["y2"] and
             (
