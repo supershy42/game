@@ -15,7 +15,6 @@ class Arena:
         self.height = 76
         self.left_player = None
         self.right_player = None
-        self.ball = Ball(self)
         self.current_round = 1
         self.max_score = 2
         self._loop_task = None
@@ -23,6 +22,7 @@ class Arena:
         self.speed = 5
         self.group_name = None
         self.broadcast_func = None
+        self.ball = Ball(self)
     
     def set_messenger(self, group_name, broadcast_func):
         if self.group_name is None:
@@ -112,9 +112,21 @@ class Arena:
         
     def get_state(self):
         return {
-            "ball": {"x": self.ball.x, "y": self.ball.y},
-            "left_player_bar": self.left_player.bar.y,
-            "right_player_bar": self.right_player.bar.y,
+            "ball": 
+            {
+                "x": self.ball.x, 
+                "y": self.ball.y
+            },
+            "left_player_bar": 
+            {
+                "x": self.left_player.bar.x, 
+                "y": self.left_player.bar.y
+            },
+            "right_player_bar": 
+            {
+                "x": self.right_player.bar.x,
+                "y": self.right_player.bar.y
+            },
         }
     
     async def forfeit(self, exit_user_id):
