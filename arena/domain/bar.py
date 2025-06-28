@@ -11,8 +11,6 @@ class Bar:
         self.x_radius = self.width / 2
         self.y_radius = self.height / 2
         self.speed = 1
-        self.x = 0
-        self.y = 0
         self.margin = 3
         self.reset()
         
@@ -23,12 +21,12 @@ class Bar:
             self.y = min(self.y + self.speed, self.arena.height - self.y_radius)
 
     def reset(self):
-        self.y = (self.arena.height - self.height) // 2
+        self.y = self.arena.height // 2
         if self.team == BaseMatch.Team.LEFT:
             self.x = 0 + self.x_radius + self.margin
-        elif self.team == BaseMatch.Team.RIGHT:
-            self.x = self.arena.width - self.x_radius - self.margin
-            
+        else:
+            self.x = self.arena.width - self.x_radius - self.margin    
+    
     def get_collision_bounds(self):
         return {
             "x1": self.x - self.x_radius,

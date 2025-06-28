@@ -10,6 +10,7 @@ done
 
 echo "PostgreSQL is up and running!"
 
+python manage.py makemigrations
 python manage.py migrate
 
 exec "$@"

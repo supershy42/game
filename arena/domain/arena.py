@@ -9,22 +9,22 @@ if TYPE_CHECKING:
     
 
 class Arena:
-    def __init__(self, unique_id):
-        self.unique_id = unique_id
+    def __init__(self, arena_id):
+        self.arena_id = arena_id
         self.width = 138
         self.height = 76
         self.left_player = None
         self.right_player = None
-        self.ball = Ball(self)
         self.current_round = 1
-        self.max_score = 3
+        self.max_score = 2
         self._loop_task = None
         self.is_finished = False
-        self.speed = 10
+        self.speed = 5
         self.group_name = None
         self.broadcast_func = None
+        self.ball = Ball(self)
     
-    def set_messanger(self, group_name, broadcast_func):
+    def set_messenger(self, group_name, broadcast_func):
         if self.group_name is None:
             self.group_name = group_name
         if self.broadcast_func is None:
@@ -101,7 +101,7 @@ class Arena:
         winner = self.check_winner()
         if winner:
             arena_result = {
-                "unique_id": self.unique_id,
+                "arena_id": self.arena_id,
                 "winner": winner.user_id,
                 "left_player_score": self.left_player.score,
                 "right_player_score": self.right_player.score,
@@ -112,9 +112,21 @@ class Arena:
         
     def get_state(self):
         return {
-            "ball": {"x": self.ball.x, "y": self.ball.y},
-            "left_player_bar": self.left_player.bar.y,
-            "right_player_bar": self.right_player.bar.y,
+            "ball": 
+            {
+                "x": self.ball.x, 
+                "y": self.ball.y
+            },
+            "left_player_bar": 
+            {
+                "x": self.left_player.bar.x, 
+                "y": self.left_player.bar.y
+            },
+            "right_player_bar": 
+            {
+                "x": self.right_player.bar.x,
+                "y": self.right_player.bar.y
+            },
         }
     
     async def forfeit(self, exit_user_id):
