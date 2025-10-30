@@ -83,9 +83,9 @@ elif DATABASE_ENGINE == 'postgresql':
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.postgresql',
-            'NAME': config('POSTGRES_DB', default=''),
-            'USER': config('POSTGRES_USER', default=''),
-            'PASSWORD': config('POSTGRES_PASSWORD', default=''),
+            'NAME': config('DB_GAME_NAME', default=''),
+            'USER': config('DB_GAME_USER', default=''),
+            'PASSWORD': config('DB_GAME_PASSWORD', default=''),
             'HOST': config('POSTGRES_HOST', default='localhost'),
             'PORT': config('POSTGRES_PORT', default='5432'),
         }
