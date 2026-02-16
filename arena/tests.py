@@ -2,7 +2,6 @@ import jwt
 from django.test import TestCase
 from rest_framework.test import APITestCase, APIClient
 from django.urls import reverse
-from django.conf import settings
 from rest_framework import status
 from unittest.mock import patch, AsyncMock
 from .models import NormalMatch
@@ -10,8 +9,8 @@ from .services import ArenaService
 
 
 def generate_jwt(user_id):
-    """Generate JWT token using Django settings"""
-    return jwt.encode({'user_id': user_id}, settings.JWT_SIGNING_KEY, algorithm=settings.JWT_ALGORITHM)
+    """Generate JWT token (signature not verified by game service)"""
+    return jwt.encode({'user_id': user_id}, 'secret', algorithm='HS256')
 
 
 class NormalMatchModelTest(TestCase):
