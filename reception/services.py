@@ -21,7 +21,7 @@ class ReceptionService:
     async def get_reception(reception_id):
         try:
             reception = await Reception.objects.aget(id=reception_id)
-        except:
+        except Reception.DoesNotExist:
             raise CustomValidationError(ErrorType.RECEPTION_NOT_FOUND)
         return reception
     
@@ -57,13 +57,25 @@ class ReceptionService:
     async def validate_join(reception_id, user_id, password):
         try:
             reception = await Reception.objects.aget(id=reception_id)
-        except:
+        except Reception.DoesNotExist:
             raise CustomValidationError(ErrorType.RECEPTION_NOT_FOUND)
         current_reception_id = await ReceptionRedisService.get_current_reception(user_id)
         if current_reception_id:
             if str(current_reception_id) != str(reception_id):
-                raise CustomValidationError(ErrorType.ALREADY_ASSIGNED)
-            # 현재 들어가려는 방에 이미 참가되어있는 경우
+                # 이전 방이 진행 중인지 확인
+                try:
+                    old_reception = await Reception.objects.aget(id=int(current_reception_id))
+                    if old_reception.state == Reception.State.IN_PROGRESS:
+                        raise CustomValidationError(ErrorType.ALREADY_ASSIGNED)
+                    # 이전 방이 대기 중(게임 종료 후 잔여 Redis 데이터) → 자동 정리
+                    await ReceptionRedisService.remove_user(current_reception_id, user_id)
+                except Reception.DoesNotExist:
+                    # 이전 방이 삭제됨 → 잔여 Redis 데이터 정리
+                    await ReceptionRedisService.remove_user(current_reception_id, user_id)
+                # 정리 후 인원 검사
+                if await ReceptionService.get_participants_count(reception_id) >= reception.max_players:
+                    raise CustomValidationError(ErrorType.RECEPTION_FULL)
+            # else: 현재 들어가려는 방에 이미 참가되어있는 경우 → 통과
         else:
             # 참가한 방이 없는 경우에만 인원 검사.
             if await ReceptionService.get_participants_count(reception_id) >= reception.max_players:
