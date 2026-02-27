@@ -43,7 +43,7 @@ class Arena:
         elif not self.right_player and team == BaseMatch.Team.RIGHT:
             self.right_player = player
         else:
-            return
+            return None
         
         if self.left_player and self.right_player:
             await self.play()

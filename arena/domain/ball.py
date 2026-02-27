@@ -35,10 +35,8 @@ class Ball:
         
         return (
             bounds["y1"] <= self.y <= bounds["y2"] and
-            (
-                bounds["x1"] <= self.x + self.radius or
-                self.x - self.radius <= bounds["x2"]
-            )
+            bounds["x1"] <= self.x + self.radius and
+            self.x - self.radius <= bounds["x2"]
         )
 
     def check_boundary_collision(self):

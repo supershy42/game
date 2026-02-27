@@ -8,6 +8,9 @@ from urllib.parse import parse_qs
 
 class CustomHttpMiddleware(MiddlewareMixin):
     def process_request(self, request):
+        if request.method == 'OPTIONS':
+            return None
+
         token_line = request.headers.get("Authorization")
         if not token_line:
             return JsonResponse({"error": "Authentication token missing."}, status=401)

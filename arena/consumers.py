@@ -118,7 +118,7 @@ class ArenaConsumer(AsyncWebsocketConsumer):
             })
             return
             
-        self.player.move(direction)
+        self.player.move(Direction(direction))
             
     async def arena_end(self, event):
         result = event['message']
