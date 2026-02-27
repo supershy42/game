@@ -23,6 +23,7 @@ ALLOWED_HOSTS = ['api-gateway', 'localhost', '127.0.0.1']
 # Application definition
 
 INSTALLED_APPS = [
+    'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -31,13 +32,21 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'channels',
+    'corsheaders',
     'reception',
     'arena',
     'tournament',
 ]
 
+CORS_ALLOWED_ORIGINS = [
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
+]
+CORS_ALLOW_CREDENTIALS = True
+
 # 위에서부터 맞는 미들웨어 찾으므로 순서 중요
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'config.middleware.CustomHttpMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -140,11 +149,7 @@ ASGI_APPLICATION = 'config.routing.application'
 
 CHANNEL_LAYERS = {
     'default': {
-        'BACKEND': 'channels_redis.core.RedisChannelLayer',
-        'CONFIG': {
-            "hosts": [(REDIS_HOST, REDIS_PORT)],
-            "capacity": REDIS_CAPACITY, # 메시지 큐 용량
-        },
+        'BACKEND': 'channels.layers.InMemoryChannelLayer',
     },
 }
 
