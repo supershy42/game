@@ -7,10 +7,10 @@ class Bar:
         self.arena = arena
         self.team = team
         self.width = 2
-        self.height = 10
+        self.height = 15
         self.x_radius = self.width / 2
         self.y_radius = self.height / 2
-        self.speed = 1
+        self.speed = 3
         self.margin = 3
         self.reset()
         

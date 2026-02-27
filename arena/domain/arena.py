@@ -2,11 +2,13 @@ from typing import TYPE_CHECKING
 from .ball import Ball
 from arena.models import BaseMatch
 import asyncio
+import logging
 from config.consumer_utils import broadcast_event
 
 if TYPE_CHECKING:
     from .player import Player
-    
+
+logger = logging.getLogger(__name__)
 
 class Arena:
     def __init__(self, arena_id):
@@ -19,7 +21,7 @@ class Arena:
         self.max_score = 2
         self._loop_task = None
         self.is_finished = False
-        self.speed = 5
+        self.speed = 30
         self.group_name = None
         self.broadcast_func = None
         self.ball = Ball(self)
@@ -66,25 +68,31 @@ class Arena:
             self._loop_task = asyncio.create_task(self._game_loop())
             
     async def _game_loop(self):
-        await self.start()
-        await self.countdown()
-        
-        while not self.is_finished:
-            self.ball.update_position()
-            self.ball.handle_collision(self.left_player.bar, self.right_player.bar)
+        try:
+            await self.start()
+            await self.countdown()
+            
+            while not self.is_finished:
+                self.ball.update_position()
+                self.ball.handle_collision(self.left_player.bar, self.right_player.bar)
 
-            round_result = self.check_round_end()
-            if round_result:
-                await self.broadcast_func('round.over', self.get_scores())
-                self.reset_round()
-                if self.check_winner():
-                    break
-                await self.countdown()
+                round_result = self.check_round_end()
+                if round_result:
+                    await self.broadcast_func('round.over', self.get_scores())
+                    self.reset_round()
+                    if self.check_winner():
+                        break
+                    await self.countdown()
 
-            await self.broadcast_func('state', self.get_state())
-            await asyncio.sleep(1 / self.speed)
-        
-        await self.end_game()
+                await self.broadcast_func('state', self.get_state())
+                await asyncio.sleep(1 / self.speed)
+            
+            await self.end_game()
+        except asyncio.CancelledError:
+            raise
+        except Exception as e:
+            logger.exception("[Arena %s] game loop error: %s", self.arena_id, e)
+            await self.end_game()
         
     async def countdown(self):
         countdown = 3

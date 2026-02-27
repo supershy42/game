@@ -9,7 +9,7 @@ from arena.models import BaseMatch
 class Ball:
     def __init__(self, arena: "Arena"):
         self.arena = arena
-        self.speed = 3
+        self.speed = 2
         self.radius = 1
         self.reset()
         
