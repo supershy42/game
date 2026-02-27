@@ -111,22 +111,26 @@ class Arena:
             await broadcast_event(self.group_name, 'arena.end', arena_result)
         
     def get_state(self):
+        # Scale factors: backend (138x76) -> frontend (800x600)
+        scale_x = 800 / self.width   # ~5.8
+        scale_y = 600 / self.height  # ~7.9
+        paddle_half_height = 50  # Frontend paddle height is 100px
+
+        # Convert paddle center Y to top Y for CSS positioning
+        left_paddle_y = self.left_player.bar.y * scale_y - paddle_half_height
+        right_paddle_y = self.right_player.bar.y * scale_y - paddle_half_height
+
+        # Scale ball position
+        ball_x = self.ball.x * scale_x
+        ball_y = self.ball.y * scale_y
+
         return {
-            "ball": 
-            {
-                "x": self.ball.x, 
-                "y": self.ball.y
-            },
-            "left_player_bar": 
-            {
-                "x": self.left_player.bar.x, 
-                "y": self.left_player.bar.y
-            },
-            "right_player_bar": 
-            {
-                "x": self.right_player.bar.x,
-                "y": self.right_player.bar.y
-            },
+            "left_score": self.left_player.score,
+            "right_score": self.right_player.score,
+            "left_paddle_y": left_paddle_y,
+            "right_paddle_y": right_paddle_y,
+            "ball_x": ball_x,
+            "ball_y": ball_y,
         }
     
     async def forfeit(self, exit_user_id):

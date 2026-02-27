@@ -27,7 +27,7 @@ class CreateReceptionView(APIView):
         )
         
 class ReceptionListView(ListAPIView):
-    queryset = Reception.objects.order_by('id')
+    queryset = Reception.objects.filter(state=Reception.State.WAITING).order_by('-id')
     serializer_class = ReceptionSerializer
     
 class ReceptionJoinView(APIView):
